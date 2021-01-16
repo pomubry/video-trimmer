@@ -17,7 +17,6 @@ Example:
 myVideo.mp4
 00:01:38.078000000 00:04:42.983000000
 00:05:21.508000000 00:10:25.112000000
-and so on...
 ==========
 This example will cut the video into two parts, from 00:01:38.078000000 to 00:04:42.983000000, and then from 00:05:21.508000000 to 00:10:25.112000000. 
 The script will then generate two video cuts as output000.mp4 and output001.mp4 and merge it together as output.mp4.
