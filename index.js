@@ -1,187 +1,309 @@
 const fs = require('fs');
 const { execSync } = require('child_process');
-
-let ts = '';
-
-// Read the contents of the ts.txt file. Return an error if its empty.
-ts += fs.readFileSync('timestamps.txt');
-if (ts.length === 0) return console.log('Timestamps not found');
-
-// Remove carrier return \r and split each timestamps by newlines \n. Filter out the empty lines as well.
-ts = ts.replace(/\r/g, '');
-let arr = ts.split(/\n/g).filter((timestamp) => timestamp !== '');
-
-// Remove the name of the file.
-const name = arr.shift();
-
-// Check if the video specified is present in the current directory.
-if (!fs.readdirSync('.').includes(name))
-  return console.log(`${name} was not found`);
-
-// Check if input video is in a supported format.
-const supportedExtensions = [
-  'webm',
-  'mkv',
-  'flv',
-  'avi',
-  'MTS',
-  'M2TS',
-  'TS',
-  'ts',
-  'mov',
-  'qt',
-  'wmv',
-  'amv',
-  'mp4',
-  'm4p',
-  'm4v',
-  'mpg',
-  'mp2',
-  'mpeg',
-  'mpe',
-  'mpv',
-  'm2v',
-  'svi',
-  '3gp',
-  '3g2',
-];
-const extensionName = name.slice(name.indexOf('.') + 1);
-const extensionError = supportedExtensions.indexOf(extensionName);
-if (extensionError === -1)
-  return console.log(
-    'Video format not supported.',
-    'Should be at least one of the following:',
-    supportedExtensions
-  );
-
-// Split the strings inside the array by whitespaces.
-// The result would be in form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
-let tsSplit = arr.map((ts) => ts.split(/\s/));
-
-// Check for timestamps errors.
-let tsError = '';
-
-// Check if the 1st timestamp inside the next subarray is equal to the 2nd timestamp in the previous subarray.
-// i.e., [[00:01:00.000000000,00:05:00.000000000],[00:05:00.00000000,00:10:00.000000000]] will give an error.
-for (let i = 1; i < tsSplit.length; i++) {
-  if (tsSplit[i][0] === tsSplit[i - 1][1]) {
-    tsError += `Timestamp Error.
-  --- Two instances of timestamp [${
-    tsSplit[i - 1][1]
-  }] was found next to each other.\n\n`;
-  }
-}
-
-// Check if the 2nd timestamp in each index is lower than the 1st timestamp. Each index will be split first by whitespace to make it into a subarray.
-// i.e., [[00:06:00.000000000,00:05:00.000000000]] will give an error
-// because 00:05:00.000000000 is lesser/earlier than 00:06:00.000000000. Time format will be converted to seconds for evaluation.
-arr.map((ts) => {
-  let times = ts.split(/\s/g);
-  let time01 = times[0].split(':');
-  let time02 = times[1].split(':');
-
-  // Convert the time string format into seconds.
-  let time01Seconds = time01.reduce(
-    (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
-    0
-  );
-  let time02Seconds = time02.reduce(
-    (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
-    0
-  );
-
-  if (time02Seconds <= time01Seconds) {
-    tsError += `Timestamp Error. 
-    --- Timestamp [${times[1]}] should be greater than [${times[0]}].\n\n`;
-  }
+const readline = require('readline');
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
 });
-if (tsError) return console.log(tsError.replace(/\n{2}$/, ''));
 
-let arrCopy = [...arr];
-let parentArr = [];
+const trimFunction = async (answer) => {
+  let ts = '';
 
-// Make an array with subarrays containing 15 timestamp pairs in each taken from a copy of 'arr' and store it inside parentArr.
-// i.e., [[timestamp1 timestamp2, timestamp3 timestamp4, etc...]]. 'timestamp1 timestamp2' is considered 1 timestamp pair
-// and there will be 15 pairs in each subarray.
-let childArrNum = Math.ceil(arr.length / 15);
-for (let i = 0; i < childArrNum; i++) {
-  let childArr = [];
-  for (let j = 0; j <= 14; j++) {
-    if (arrCopy.length === 0) break;
-    childArr.push(arrCopy.shift());
+  // Read the contents of the ts.txt file. Return an error if its empty.
+  ts += fs.readFileSync('timestamps.txt');
+  if (ts.length === 0) {
+    console.log('\nTimestamps not found');
+    return rl.close();
   }
-  parentArr.push(childArr);
-}
 
-let counter = 0;
-let bash = '';
+  // Check for timestamps errors.
+  let tsError = false;
 
-/* Map the parentArr and output a string of commands which will be executed later. 
-Example output would be:
-ffmpeg -i input.mp4 -ss 00:04:46.987000000 -to 00:05:09.810000000 -r 29970/1000 output000.mp4 -ss 00:05:15.415000000 -to 00:06:00.661000000 -r 29970/1000 output001.mp4 -ss 00:06:02.095000000 -to 00:06:11.205000000 -r 29970/1000 output002.mp4 -ss 00:06:12.406000000 -to 00:06:20.013000000 -r 29970/1000 output003.mp4 -ss 00:06:24.751000000 -to 00:06:43.036000000 -r 29970/1000 output004.mp4 -ss 00:07:08.562000000 -to 00:07:19.573000000 -r 29970/1000 output005.mp4 -ss 00:07:49.102000000 -to 00:07:59.813000000 -r 29970/1000 output006.mp4 -ss 00:08:12.793000000 -to 00:08:29.176000000 -r 29970/1000 output007.mp4 -ss 00:08:35.582000000 -to 00:08:47.227000000 -r 29970/1000 output008.mp4 -ss 00:12:32.920000000 -to 00:13:03.984000000 -r 29970/1000 output009.mp4 -ss 00:13:18.232000000 -to 00:13:23.737000000 -r 29970/1000 output010.mp4 -ss 00:13:54.902000000 -to 00:14:23.697000000 -r 29970/1000 output011.mp4 -ss 00:14:26.934000000 -to 00:14:56.463000000 -r 29970/1000 output012.mp4 -ss 00:15:18.886000000 -to 00:16:12.139000000 -r 29970/1000 output013.mp4 -ss 00:16:19.746000000 -to 00:16:31.792000000 -r 29970/1000 output014.mp4
-ffmpeg -i input.mp4 -ss 00:16:39.600000000 -to 00:16:47.407000000 -r 29970/1000 output015.mp4 -ss 00:16:54.281000000 -to 00:16:59.086000000 -r 29970/1000 output016.mp4 -ss 00:17:34.755000000 -to 00:17:49.303000000 -r 29970/1000 output017.mp4 -ss 00:18:05.719000000 -to 00:18:39.086000000 -r 29970/1000 output018.mp4 -ss 00:19:00.941000000 -to 00:19:17.624000000 -r 29970/1000 output019.mp4 -ss 00:22:36.423000000 -to 00:22:56.410000000 -r 29970/1000 output020.mp4 -ss 00:23:17.097000000 -to 00:23:38.252000000 -r 29970/1000 output021.mp4 -ss 00:23:50.898000000 -to 00:24:04.545000000 -r 29970/1000 output022.mp4 -ss 00:25:57.891000000 -to 00:26:12.005000000 -r 29970/1000 output023.mp4 -ss 00:34:59.867000000 -to 00:35:04.738000000 -r 29970/1000 output024.mp4 -ss 00:35:57.391000000 -to 00:36:20.914000000 -r 29970/1000 output025.mp4 -ss 00:37:00.621000000 -to 00:37:17.804000000 -r 29970/1000 output026.mp4 -ss 00:37:21.708000000 -to 00:37:35.355000000 -r 29970/1000 output027.mp4 -ss 00:45:53.353000000 -to 00:46:25.085000000 -r 29970/1000 output028.mp4 -ss 00:55:20.120000000 -to 00:55:42.276000000 -r 29970/1000 output029.mp4
-etc...
-*/
-parentArr.map((arr) => {
-  let str = `ffmpeg -i ${name}`;
-  arr.map((ts) => {
-    let to = ts.replace(/\s/g, ' -to ');
-    let number = '';
-    if (counter < 10) {
-      number = '00' + counter;
-    } else if (counter < 100) {
-      number = '0' + counter;
+  // Remove carrier return \r and split each timestamps by newlines \n. Filter the array with the correct timestamp format.
+  // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
+  let tsRegex = /\d{2}:\d{2}:\d{2}\.\d{9}\s\d{2}:\d{2}:\d{2}\.\d{9}/;
+  let totalTime = 0;
+
+  let arr = ts.split('\r\n').filter((timestamp, idx) => {
+    if (idx === 0) return true;
+
+    // Check if the 2nd timestamp in each index is lower than the 1st timestamp. Each index will be split first by whitespace to make it into a subarray.
+    // i.e., [[00:06:00.000000000,00:05:00.000000000]] will give an error
+    // because 00:05:00.000000000 is lesser/earlier than 00:06:00.000000000. Time format will be converted to seconds for evaluation.
+    // If the format is valid, add each videos' duration to the variable 'totalTime' for the output's expected total duration.
+    if (tsRegex.test(timestamp)) {
+      let times = timestamp.split(/\s/g);
+      let time01 = times[0].split(':');
+      let time02 = times[1].split(':');
+
+      // Convert the time string format into seconds.
+      let time01Seconds = time01.reduce(
+        (acc, current, index) =>
+          acc + Number(current) * Math.pow(60, 2 - index),
+        0
+      );
+      let time02Seconds = time02.reduce(
+        (acc, current, index) =>
+          acc + Number(current) * Math.pow(60, 2 - index),
+        0
+      );
+
+      if (time02Seconds <= time01Seconds) {
+        tsError = true;
+        console.log(`\nTimestamp duration error at line ${idx + 1}. 
+          --- Timestamp [${times[1]}] should be greater than [${times[0]}].`);
+      } else {
+        totalTime += time02Seconds - time01Seconds;
+        return true;
+      }
     } else {
-      number += `${counter}`;
+      tsError = true;
+      console.log(
+        `\nInvalid timestamp format at line ${idx + 1}: [${timestamp}].`
+      );
     }
-    str += ` -ss ${to} -r 29970/1000 output${number}.${extensionName}`;
-    counter++;
   });
-  str += '\n';
-  bash += str;
-});
 
-// Get the name of the file excluding its extension.
-const extensionIndex = name.indexOf('.');
-const nameOnly = name.slice(0, extensionIndex);
+  if (tsError) {
+    console.log('\n= = = = = = = = = = H I N T S : = = = = = = = = = =');
+    console.log(
+      '\n* Line 1 should be the video filename including its extension. \n  Example: input.mp4.'
+    );
+    console.log(
+      '\n* Timestamp format for each line(except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.'
+    );
+    console.log('  Example: 10:00:00.123456789 11:00:00.123456789');
+    console.log(
+      "\n* Timestamp format should be in sexagesimal system and the seconds' format should be 9 decimal places long. \n  Example: 12:34:56.123456789."
+    );
+    console.log("\n* Don't leave any empty lines.");
+    return rl.close();
+  }
 
-// Make an .sh file with the 'bash' variable as its contents then execute.
-fs.writeFileSync(`${nameOnly}.sh`, bash);
-console.log(`${nameOnly}.sh has been created.\n`);
-console.log(`Executing ${nameOnly}.sh. This may take a while...\n`);
+  // Remove the name of the file.
+  const name = arr.shift();
 
-const options = { stdio: 'inherit' };
-execSync(`${nameOnly}.sh`, options);
+  // Check if the video specified is present in the current directory.
+  if (!fs.readdirSync('.').includes(name)) {
+    console.log(
+      `\n${name} was not found. Make sure to put the correct video filename at the top(Line 1) of timestamps.txt`
+    );
+    return rl.close();
+  }
 
-// List the files in the current directory and filter it with video files of the format 'outputxyz.extensionName'
-// where xyz is the number of the video, i.e., output001.mp4.
-let files = fs.readdirSync('.');
-const regexPattern = `output\\d{3}\\.${extensionName}`;
-const regex = new RegExp(regexPattern);
-files = files.filter((file) => file.match(regex));
+  // Get the name of the file excluding its extension.
+  const extensionIndex = name.indexOf('.');
+  const nameOnly = name.slice(0, extensionIndex);
 
-// List the relative path of each video files and save it into mylist.txt
-let myList = '';
-files.forEach(
-  (file, index) => (myList += `${index !== 0 ? '\n' : ''}file './${file}'`)
-);
-fs.writeFileSync('mylist.txt', myList);
+  // Check if input video is in a supported format.
+  const supportedExtensions = [
+    'webm',
+    'mkv',
+    'flv',
+    'avi',
+    'MTS',
+    'M2TS',
+    'TS',
+    'ts',
+    'mov',
+    'qt',
+    'wmv',
+    'amv',
+    'mp4',
+    'm4p',
+    'm4v',
+    'mpg',
+    'mp2',
+    'mpeg',
+    'mpe',
+    'mpv',
+    'm2v',
+    'svi',
+    '3gp',
+    '3g2',
+  ];
+  const extensionName = name.slice(name.indexOf('.') + 1);
+  const extensionError = supportedExtensions.indexOf(extensionName);
+  if (extensionError === -1) {
+    console.log('\nVideo format error.');
+    console.log('\nOnly the following extensions are supported:\n');
+    console.log(supportedExtensions);
+    return rl.close();
+  }
 
-// Concatenate all the videos listed in the mylist.txt then remove the .sh file that was created earlier.
-execSync(
-  `ffmpeg -f concat -safe 0 -i mylist.txt -c copy ${nameOnly}(Result).mp4`,
-  options
-);
-console.log(`\n${nameOnly}(Result).mp4 has been created.\n`);
-execSync(`rm ${nameOnly}.sh`, options);
+  // Split the strings inside the array by whitespaces.
+  // The result would be in form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
+  let tsSplit = arr.map((ts) => ts.split(/\s/));
 
-// Remove mylist.txt.
-console.log('Removing mylist.txt\n');
-fs.unlinkSync('mylist.txt');
+  // Check if the 1st timestamp inside the next subarray is equal to the 2nd timestamp in the previous subarray.
+  // i.e., [[00:01:00.000000000,00:05:00.000000000],[00:05:00.00000000,00:10:00.000000000]] will give an error.
 
-// Remove the video segments that were created in the process.
-console.log('Removing video segments:\n');
-files.forEach((path) => {
-  console.log('./' + path);
-  fs.unlinkSync('./' + path);
+  for (let i = 1; i < tsSplit.length; i++) {
+    if (tsSplit[i][0] === tsSplit[i - 1][1]) {
+      tsError = true;
+      console.log(`\nTimestamp error at line ${i + 1} and line ${i + 2}.
+    --- Two instances of timestamp [${tsSplit[i - 1][1]}] were found.`);
+    }
+  }
+
+  if (tsError) return rl.close();
+
+  let arrCopy = [...arr];
+  let parentArr = [];
+
+  // Make an array with subarrays containing 15 timestamp pairs in each taken from a copy of 'arr' and store it inside parentArr.
+  // i.e., [[timestamp1 timestamp2, timestamp3 timestamp4, etc...]]. 'timestamp1 timestamp2' is considered 1 timestamp pair
+  // and there will be 15 pairs in each subarray.
+  let childArrNum = Math.ceil(arr.length / 15);
+  for (let i = 0; i < childArrNum; i++) {
+    let childArr = [];
+    for (let j = 0; j <= 14; j++) {
+      if (arrCopy.length === 0) break;
+      childArr.push(arrCopy.shift());
+    }
+    parentArr.push(childArr);
+  }
+
+  let counter = 0;
+  let ffmpegScript = '';
+  let files = fs.readdirSync('.');
+
+  /* Map the parentArr and output a string of commands which will be executed later. Each command will process 15 video segments at a time.
+  Example output would be:
+  ffmpeg -v warning -stats -i "input.mp4" -ss 00:06:07.867200534 -to 00:06:47.440106773 -r 60 "input_001.mp4" -ss 00:07:23.275942609 -to 00:08:14.960960961 -r 60 "input_002.mp4" -ss 00:08:32.178178178 -to 00:09:18.691358025 -r 60 "input_003.mp4" -ss 00:09:20.259592926 -to 00:09:28.100767434 -r 60 "input_004.mp4" -ss 00:09:30.269602936 -to 00:09:54.293626960 -r 60 "input_005.mp4" -ss 00:10:02.034701368 -to 00:10:23.656322990 -r 60 "input_006.mp4" -ss 00:10:30.229562896 -to 00:11:12.638638639 -r 60 "input_007.mp4" -ss 00:11:16.542542543 -to 00:11:42.301634968 -r 60 "input_008.mp4" -ss 00:12:02.121454788 -to 00:12:30.583249917 -r 60 "input_009.mp4" -ss 00:13:33.779779780 -to 00:13:52.698698699 -r 60 "input_010.mp4" -ss 00:16:52.545211879 -to 00:17:25.544878212 -r 60 "input_011.mp4" -ss 00:22:27.713713714 -to 00:23:04.583917251 -r 60 "input_012.mp4" -ss 00:24:40.379713046 -to 00:25:01.567567568 -r 60 "input_013.mp4" -ss 00:25:05.905238572 -to 00:25:27.660326994 -r 60 "input_014.mp4" -ss 00:25:29.462128795 -to 00:25:33.632966300 -r 60 "input_015.mp4"
+  ffmpeg -v warning -stats -i "input.mp4" -ss 00:25:48.848181515 -to 00:25:51.117117117 -r 60 "input_016.mp4" -ss 00:28:12.525191859 -to 00:28:59.905905906 -r 60 "input_017.mp4" -ss 00:29:11.250583917 -to 00:29:21.527527528 -r 60 "input_018.mp4" -ss 00:29:46.986319653 -to 00:30:11.110443777 -r 60 "input_019.mp4" -ss 00:30:32.498498498 -to 00:31:04.330330330 -r 60 "input_020.mp4" -ss 00:33:30.976976977 -to 00:33:59.739072406 -r 60 "input_021.mp4" -ss 00:39:00.706706707 -to 00:39:11.951284618 -r 60 "input_022.mp4" -ss 00:40:08.674674675 -to 00:40:25.291291291 -r 60 "input_023.mp4" -ss 00:41:51.711044378 -to 00:42:11.030363697 -r 60 "input_024.mp4" -ss 00:45:34.667334001 -to 00:46:37.797130464 -r 60 "input_025.mp4" -ss 00:46:43.436102769 -to 00:47:14.200200200 -r 60 "input_026.mp4" -ss 00:56:12.838838839 -to 00:57:14.233566900 -r 60 "input_027.mp4" -ss 00:57:26.612612613 -to 00:59:10.916916917 -r 60 "input_028.mp4" -ss 00:59:34.874207541 -to 00:59:46.218885552 -r 60 "input_029.mp4" -ss 00:59:59.465465465 -to 01:00:20.086086086 -r 60 "input_030.mp4"	
+  etc...
+  */
+
+  parentArr.forEach((arr) => {
+    let str = `ffmpeg -v warning -stats -i "${name}"`;
+    arr.forEach((ts) => {
+      counter++;
+      let to = ts.replace(/\s/g, ' -to ');
+      let number = '';
+
+      if (counter < 10) {
+        number = '00' + counter;
+      } else if (counter < 100) {
+        number = '0' + counter;
+      } else {
+        number += `${counter}`;
+      }
+
+      // Check first if the fileName already exists. If it does, skip.
+      if (files.includes(`${nameOnly}_${number}.${extensionName}`)) return;
+
+      str += ` -ss ${to} -r 60 "${nameOnly}_${number}.${extensionName}"`;
+    });
+
+    // Only add the string to ffmpegScript if the string changed(Meaning it has videos to process).
+    if (str !== `ffmpeg -v warning -stats -i "${name}"`) {
+      str += '\n';
+      ffmpegScript += str;
+    }
+  });
+
+  const options = { stdio: 'inherit' };
+
+  // Store each FFmpeg command in an array in order to loop through it and execute each one by one.
+  let ffmpegArr = ffmpegScript.split('\n');
+  ffmpegArr.pop();
+  console.log('Executing FFmpeg. This may take a while...\n');
+  ffmpegArr.forEach((script) => {
+    console.log(script + '\n');
+    execSync(script, options);
+  });
+
+  // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
+  // where XYZ is the number of the video, i.e., fileName_001.mp4.
+  const regexPattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
+  const regex = new RegExp(regexPattern);
+  files = fs.readdirSync('.');
+  files = files.filter((file) => regex.test(file));
+
+  // Function to call when merging videos.
+  const mergeVideos = () => {
+    // List the relative path of each video files and save it into mylist.txt.
+    let myList = '';
+    files.forEach(
+      (file, index) => (myList += `${index !== 0 ? '\n' : ''}file './${file}'`)
+    );
+    fs.writeFileSync('mylist.txt', myList);
+
+    // Concatenate all the videos listed in the mylist.txt.
+    if (fs.readdirSync('.').includes(`${nameOnly}(Result).mp4`)) {
+      // Check first if the output filename already exists. Delete first if it does.
+      fs.unlinkSync(`${nameOnly}(Result).mp4`);
+    }
+    console.log('\nMerging video segments...\n');
+    execSync(
+      `ffmpeg -v warning -f concat -safe 0 -i mylist.txt -c copy "${nameOnly}(Result).mp4"`,
+      options
+    );
+    console.log(`${nameOnly}.mp4 has been created.`);
+
+    // Remove mylist.txt.
+    console.log('\nRemoving mylist.txt...');
+    fs.unlinkSync('mylist.txt');
+
+    // Remove the video segments that were created in the process.
+    let removedFiles = 0;
+    if (answer === 'no') {
+      console.log('\nRemoving video segments:\n');
+      files.forEach((path) => {
+        console.log('./' + path);
+        fs.unlinkSync('./' + path);
+        removedFiles++;
+      });
+      console.log(`\nTotal video segments removed: ${removedFiles}`);
+    } else {
+      console.log('\nVideo segments will be kept.');
+    }
+
+    let hour = Math.floor(totalTime / 3600);
+    let minute = Math.floor((totalTime % 3600) / 60);
+    let seconds = (totalTime % 3600) % 60;
+    let sexagesimal = `${hour < 10 ? '0' + hour : hour}:${
+      minute < 10 ? '0' + minute : minute
+    }:${seconds < 10 ? '0' + seconds.toFixed(4) : seconds.toFixed(4)}`;
+
+    console.log(
+      `\nVideo trimmer has finished. Output video should be about ${sexagesimal} long.`
+    );
+
+    rl.close();
+
+    return;
+  };
+
+  // Check the duration of all the video segments combined and check if it nearly matches the expected duration from the variable 'totalTime'
+  let overallDuration = 0;
+  files.forEach((file) => {
+    let durationInSeconds = Number(
+      execSync(
+        `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${file}"`
+      ).toString()
+    );
+    overallDuration += durationInSeconds;
+  });
+
+  let durationDiff = Math.abs(overallDuration - totalTime);
+  if (durationDiff > 3) {
+    console.log(
+      `\nSomething went wrong. Output video will be missing about ${durationDiff.toFixed(
+        4
+      )} seconds of content. Please check each video segments for errors.`
+    );
+
+    rl.question('\nAbort merging videos? [yes|no]: ', function (abort) {
+      if (abort === 'yes') return rl.close();
+      mergeVideos();
+    });
+  } else {
+    mergeVideos();
+  }
+};
+
+rl.question('\nKeep all video segments? [yes|no]: ', function (answer) {
+  trimFunction(answer);
 });
