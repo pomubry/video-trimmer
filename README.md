@@ -51,7 +51,7 @@ Make sure each timestamp pairs are separated by a space between them.
 
 The script will then generate 5 video cuts with the format sampleVideo_001.mp4, sampleVideo_002.mp4, etc., and then merge it together as "sampleVideo (Result).mp4".
 
-Once you're done enumerating the timestamps, save timestamps.txt and run `RunTrimmer.bat`.
+Once you're done enumerating the timestamps, save timestamps.txt and run the `index.js` file.
 
 **NOTES:**
 
