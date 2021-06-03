@@ -8,12 +8,12 @@ A simple video trimmer for Windows using FFmpeg, mpv and Node.js.
 - FFmpeg
 - mpv video player
 
-## Installation
+## Instructions
 
 - Install Node.js, FFmpeg, and mpv as your video player.
 - Make sure to add FFmpeg to Windows Path using Environment variables.
-- Copy and paste the copyTime.js file into `%APPDATA%/mpv/scripts`.
-- Make the mpv/scripts folder if you dont have one yet.
+- Copy and paste the contents of the script folder into `%APPDATA%/mpv/scripts`.
+- Make the /mpv/scripts folder if you dont have one yet.
 
 ## Usage
 
@@ -47,7 +47,7 @@ This example will cut the video into five segments:
 from `00:04:21.427833333` to `00:04:52.191900000`, and then
 from `00:05:04.470833333` to `00:05:44.243900000`, and so on.
 
-Make sure each timestamp pairs are separated by a space between them.
+Make sure each timestamp pairs are separated by a single space between them.
 
 The script will then generate 5 video cuts with the format sampleVideo_001.mp4, sampleVideo_002.mp4, etc., and then merge it together as "sampleVideo (Result).mp4".
 
