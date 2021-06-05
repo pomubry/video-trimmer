@@ -25,11 +25,84 @@ const sexagesimalToSeconds = (sexagesimal) => {
   return timeInSeconds;
 };
 
-function endTrigger() {
+const endTrigger = () => {
   rl.question("\nPress any key to continue. . .", function () {
     return rl.close();
   });
-}
+};
+
+const mergeVideos = (
+  videosDir,
+  videosDirPath,
+  nameOnly,
+  options,
+  answer,
+  totalTime,
+  timeDiff
+) => {
+  // List the relative path of each video files and save it into mylist.txt.
+  let myList = "";
+  videosDir.forEach(
+    (file, index) =>
+      (myList += `${index !== 0 ? "\n" : ""}file '${videosDirPath}/${file}'`)
+  );
+  fs.writeFileSync("mylist.txt", myList);
+  console.log("\nmylist.txt has been created temporarily. . .");
+
+  // Concatenate all the videos listed in the mylist.txt.
+  const outputFile = `${nameOnly} (Result).mp4`;
+
+  if (fs.readdirSync(".").includes(outputFile)) {
+    // Check first if the output filename already exists. Delete if it does.
+    console.log(
+      `\nThe file [\x1b[94m${outputFile}\x1b[0m] already exists. Removing file before making a new one. . .`
+    );
+    fs.unlinkSync(outputFile);
+  }
+  console.log("\nMerging video segments. . .");
+  execSync(
+    `ffmpeg -v warning -f concat -safe 0 -i mylist.txt -c copy "${outputFile}"`,
+    options
+  );
+  console.log(`\n\x1b[32m${outputFile}\x1b[0m has been created.`);
+
+  // Remove mylist.txt.
+  console.log("\nRemoving mylist.txt. . .");
+  fs.unlinkSync("mylist.txt");
+
+  // Remove the video segments that were created in the process.
+  let removedFiles = 0;
+  if (answer === "no") {
+    console.log("\nRemoving video segments:\n");
+    videosDir.forEach((file) => {
+      console.log(file);
+      fs.unlinkSync(`${videosDirPath}/${file}`);
+      removedFiles++;
+    });
+    console.log(`\nTotal video segments removed: ${removedFiles}`);
+
+    videosDir = fs.readdirSync(videosDirPath);
+    if (videosDir.length > 0) {
+      console.log(
+        `\nSome files remain inside the \x1b[95m${nameOnly}\x1b[0m directory. You could manually remove it safely.`
+      );
+    } else {
+      fs.rmdirSync(nameOnly);
+    }
+  } else {
+    console.log("\nVideo segments will be kept.");
+  }
+
+  let sexagesimal = sexagesimalFormat(totalTime);
+
+  console.log(
+    `\nVideo trimmer has finished. Merged output video should be about ${sexagesimal} long.`
+  );
+
+  console.log("\nTotal processing time:", sexagesimalFormat(timeDiff / 1000));
+
+  return endTrigger();
+};
 
 const trimFunction = (answer) => {
   let ts = "";
@@ -176,10 +249,11 @@ const trimFunction = (answer) => {
   // Make an array with subarrays containing 15 timestamp pairs in each taken from a copy of 'arr' and store it inside parentArr.
   // i.e., [[timestamp1 timestamp2, timestamp3 timestamp4, etc...]]. 'timestamp1 timestamp2' is considered 1 timestamp pair
   // and there will be 15 pairs in each subarray.
-  let childArrNum = Math.ceil(arr.length / 15);
+  const tsPairs = 15;
+  let childArrNum = Math.ceil(arr.length / tsPairs);
   for (let i = 0; i < childArrNum; i++) {
     let childArr = [];
-    for (let j = 0; j <= 14; j++) {
+    for (let j = 0; j <= tsPairs - 1; j++) {
       if (arrCopy.length === 0) break;
       childArr.push(arrCopy.shift());
     }
@@ -188,12 +262,18 @@ const trimFunction = (answer) => {
 
   let counter = 0;
   let ffmpegScripts = [];
-  let files = fs.readdirSync(".");
+
+  if (!fs.readdirSync(".").includes(nameOnly)) {
+    fs.mkdirSync(nameOnly);
+  }
+
+  let videosDirPath = "./" + nameOnly;
+  let videosDir = fs.readdirSync(videosDirPath);
 
   /* Map the parentArr and output a string of commands which will be executed later. Each command will process up to 15 video segments at a time.
   Example output would be:
-  ffmpeg -v warning -stats -i "input.mp4" -ss 00:06:07.867200534 -to 00:06:47.440106773 -r 60 "input_001.mp4" -ss 00:07:23.275942609 -to 00:08:14.960960961 -r 60 "input_002.mp4" -ss 00:08:32.178178178 -to 00:09:18.691358025 -r 60 "input_003.mp4" -ss 00:09:20.259592926 -to 00:09:28.100767434 -r 60 "input_004.mp4" -ss 00:09:30.269602936 -to 00:09:54.293626960 -r 60 "input_005.mp4" -ss 00:10:02.034701368 -to 00:10:23.656322990 -r 60 "input_006.mp4" -ss 00:10:30.229562896 -to 00:11:12.638638639 -r 60 "input_007.mp4" -ss 00:11:16.542542543 -to 00:11:42.301634968 -r 60 "input_008.mp4" -ss 00:12:02.121454788 -to 00:12:30.583249917 -r 60 "input_009.mp4" -ss 00:13:33.779779780 -to 00:13:52.698698699 -r 60 "input_010.mp4" -ss 00:16:52.545211879 -to 00:17:25.544878212 -r 60 "input_011.mp4" -ss 00:22:27.713713714 -to 00:23:04.583917251 -r 60 "input_012.mp4" -ss 00:24:40.379713046 -to 00:25:01.567567568 -r 60 "input_013.mp4" -ss 00:25:05.905238572 -to 00:25:27.660326994 -r 60 "input_014.mp4" -ss 00:25:29.462128795 -to 00:25:33.632966300 -r 60 "input_015.mp4"
-  ffmpeg -v warning -stats -i "input.mp4" -ss 00:25:48.848181515 -to 00:25:51.117117117 -r 60 "input_016.mp4" -ss 00:28:12.525191859 -to 00:28:59.905905906 -r 60 "input_017.mp4" -ss 00:29:11.250583917 -to 00:29:21.527527528 -r 60 "input_018.mp4" -ss 00:29:46.986319653 -to 00:30:11.110443777 -r 60 "input_019.mp4" -ss 00:30:32.498498498 -to 00:31:04.330330330 -r 60 "input_020.mp4" -ss 00:33:30.976976977 -to 00:33:59.739072406 -r 60 "input_021.mp4" -ss 00:39:00.706706707 -to 00:39:11.951284618 -r 60 "input_022.mp4" -ss 00:40:08.674674675 -to 00:40:25.291291291 -r 60 "input_023.mp4" -ss 00:41:51.711044378 -to 00:42:11.030363697 -r 60 "input_024.mp4" -ss 00:45:34.667334001 -to 00:46:37.797130464 -r 60 "input_025.mp4" -ss 00:46:43.436102769 -to 00:47:14.200200200 -r 60 "input_026.mp4" -ss 00:56:12.838838839 -to 00:57:14.233566900 -r 60 "input_027.mp4" -ss 00:57:26.612612613 -to 00:59:10.916916917 -r 60 "input_028.mp4" -ss 00:59:34.874207541 -to 00:59:46.218885552 -r 60 "input_029.mp4" -ss 00:59:59.465465465 -to 01:00:20.086086086 -r 60 "input_030.mp4"	
+  ffmpeg -v warning -stats -i "input.mkv" -ss 00:00:01.468000000 -to 00:00:03.303000000 -r 60 "./input/input_001.mkv" -ss 00:00:05.105000000 -to 00:00:06.907000000 -r 60 "./input/input_002.mkv" -ss 00:00:08.475000000 -to 00:00:10.143000000 -r 60 "./input/input_003.mkv" -ss 00:00:11.745000000 -to 00:00:13.514000000 -r 60 "./input/input_004.mkv" -ss 00:00:15.115000000 -to 00:00:16.850000000 -r 60 "./input/input_005.mkv" -ss 00:00:17.150000000 -to 00:00:19.319000000 -r 60 "./input/input_006.mkv" -ss 00:00:21.188000000 -to 00:00:22.222000000 -r 60 "./input/input_007.mkv" -ss 00:00:23.924000000 -to 00:00:25.559000000 -r 60 "./input/input_008.mkv" -ss 00:00:27.394000000 -to 00:00:29.363000000 -r 60 "./input/input_009.mkv" -ss 00:00:31.331000000 -to 00:00:33.634000000 -r 60 "./input/input_010.mkv" -ss 00:00:36.069000000 -to 00:00:39.473000000 -r 60 "./input/input_011.mkv" -ss 00:00:40.974000000 -to 00:00:43.043000000 -r 60 "./input/input_012.mkv" -ss 00:00:44.878000000 -to 00:00:46.947000000 -r 60 "./input/input_013.mkv" -ss 00:00:48.715000000 -to 00:00:50.350000000 -r 60 "./input/input_014.mkv" -ss 00:00:51.985000000 -to 00:00:53.787000000 -r 60 "./input/input_015.mkv"
+  ffmpeg -v warning -stats -i "input.mkv" -ss 00:00:55.622000000 -to 00:00:57.891000000 -r 60 "./input/input_016.mkv"
   etc...
   */
 
@@ -213,8 +293,8 @@ const trimFunction = (answer) => {
       }
 
       // Check first if the fileName already exists. If it does, skip.
-      if (files.includes(`${nameOnly}_${number}.${extensionName}`)) return;
-      str += ` -ss ${to} -r 60 "${nameOnly}_${number}.${extensionName}"`;
+      if (videosDir.includes(`${nameOnly}_${number}.${extensionName}`)) return;
+      str += ` -ss ${to} -r 60 "${videosDirPath}/${nameOnly}_${number}.${extensionName}"`;
     });
 
     // Only add the string to ffmpegScript if the string changed (Meaning it has videos to process).
@@ -239,67 +319,8 @@ const trimFunction = (answer) => {
   // where XYZ is the number of the video, i.e., fileName_001.mp4.
   const regexPattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
   const regex = new RegExp(regexPattern);
-  files = fs.readdirSync(".");
-  files = files.filter((file) => regex.test(file));
-
-  // Function to call when merging videos.
-  const mergeVideos = () => {
-    // List the relative path of each video files and save it into mylist.txt.
-    let myList = "";
-    files.forEach(
-      (file, index) => (myList += `${index !== 0 ? "\n" : ""}file './${file}'`)
-    );
-    fs.writeFileSync("mylist.txt", myList);
-    console.log("\nmylist.txt has been created temporarily. . .");
-
-    // Concatenate all the videos listed in the mylist.txt.
-    const outputFile = `${nameOnly} (Result).mp4`;
-
-    if (fs.readdirSync(".").includes(outputFile)) {
-      // Check first if the output filename already exists. Delete if it does.
-      console.log(
-        `\nThe file [${outputFile}] already exists. Removing file before making a new one. . .`
-      );
-      fs.unlinkSync(outputFile);
-    }
-    console.log("\nMerging video segments. . .");
-    execSync(
-      `ffmpeg -v warning -f concat -safe 0 -i mylist.txt -c copy "${outputFile}"`,
-      options
-    );
-    console.log(`\n\x1b[32m${outputFile}\x1b[0m has been created.`);
-
-    // Remove mylist.txt.
-    console.log("\nRemoving mylist.txt. . .");
-    fs.unlinkSync("mylist.txt");
-
-    // Remove the video segments that were created in the process.
-    let removedFiles = 0;
-    if (answer === "no") {
-      console.log("\nRemoving video segments:\n");
-      files.forEach((path) => {
-        console.log("./" + path);
-        fs.unlinkSync("./" + path);
-        removedFiles++;
-      });
-      console.log(`\nTotal video segments removed: ${removedFiles}`);
-    } else {
-      console.log("\nVideo segments will be kept.");
-    }
-
-    let sexagesimal = sexagesimalFormat(totalTime);
-
-    console.log(
-      `\nVideo trimmer has finished. Merged output video should be about ${sexagesimal} long.`
-    );
-
-    console.log(
-      "\nTotal processing time:",
-      sexagesimalFormat((time2 - time1) / 1000)
-    );
-
-    return endTrigger();
-  };
+  videosDir = fs.readdirSync(videosDirPath);
+  videosDir = videosDir.filter((file) => regex.test(file));
 
   // Check the duration of each video segments and if the computed duration is almost equal to actual.
   let possibleErrors = [];
@@ -307,11 +328,11 @@ const trimFunction = (answer) => {
     `${ffmpegRan ? "\n" : ""}Checking each video segment's length. . .`
   );
 
-  files.forEach((file, index) => {
+  videosDir.forEach((file, index) => {
     // Each video segment loses about 0.023 seconds of content based on multiple testing.
     let durationInSeconds = Number(
       execSync(
-        `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${file}"`
+        `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videosDirPath}/${file}"`
       ).toString()
     );
 
@@ -322,7 +343,7 @@ const trimFunction = (answer) => {
       possibleErrors.push(file);
     }
     console.log(
-      `\n[${file}] Duration: Computed (${sexagesimalFormat(
+      `\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${sexagesimalFormat(
         timeArr[index]
       )}) vs Actual (${sexagesimalFormat(
         durationInSeconds
@@ -334,26 +355,42 @@ const trimFunction = (answer) => {
     );
   });
 
+  let mergeVideosArgs = [
+    videosDir,
+    videosDirPath,
+    nameOnly,
+    options,
+    answer,
+    totalTime,
+    time2 - time1,
+  ];
+
   if (possibleErrors.length > 0) {
     console.log("\nPlease check the following files for possible errors:\n");
     console.log(possibleErrors);
     console.log(
       "\nNote that small disparities are normal and you may continue if you have not found errors in any video segments."
     );
-    rl.question("\nAbort merging videos? [yes|no]: ", function (abort) {
-      if (abort === "yes") {
-        console.log("\nAborting merge of video segments. . .");
-        return endTrigger();
-      } else {
-        mergeVideos();
+    rl.question(
+      "\nAbort merging videos? (Default: no) | [yes|no]: ",
+      function (abort) {
+        if (abort === "yes") {
+          console.log("\nAborting merging of video segments. . .");
+          return endTrigger();
+        } else {
+          mergeVideos(...mergeVideosArgs);
+        }
       }
-    });
+    );
   } else {
     console.log("\nNo problems were found with the video segments.");
-    mergeVideos();
+    mergeVideos(...mergeVideosArgs);
   }
 };
 
-rl.question("\nKeep all video segments? [yes|no]: ", function (answer) {
-  trimFunction(answer);
-});
+rl.question(
+  "\nKeep all video segments? (Default: yes) | [yes|no]: ",
+  function (answer) {
+    trimFunction(answer);
+  }
+);
