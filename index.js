@@ -294,7 +294,7 @@ const trimFunction = (answer) => {
 
       // Check first if the fileName already exists. If it does, skip.
       if (videosDir.includes(`${nameOnly}_${number}.${extensionName}`)) return;
-      str += ` -ss ${to} -r 60 "${videosDirPath}/${nameOnly}_${number}.${extensionName}"`;
+      str += ` -ss ${to} -r 60 -crf 17 "${videosDirPath}/${nameOnly}_${number}.${extensionName}"`;
     });
 
     // Only add the string to ffmpegScript if the string changed (Meaning it has videos to process).
