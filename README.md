@@ -5,13 +5,13 @@ A simple video trimmer for Windows using FFmpeg, mpv and Node.js.
 ## Requirements
 
 - Node.js
-- FFmpeg
+- FFmpeg & FFProbe
 - mpv video player
 
-## Instructions
+## Setup
 
-- Install Node.js, FFmpeg, and mpv as your video player.
-- Make sure to add FFmpeg to Windows Path using Environment variables.
+- Install Node.js, FFmpeg, FFProbe, and mpv as your video player.
+- Make sure to add FFmpeg & FFProbe to Windows Path using Environment variables.
 - Copy and paste the contents of the script folder into `%APPDATA%/mpv/scripts`.
 - Make the /mpv/scripts folder if you dont have one yet.
 

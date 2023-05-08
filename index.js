@@ -25,10 +25,12 @@ const sexagesimalToSeconds = (sexagesimal) => {
   return timeInSeconds;
 };
 
+const createTimestampCopy = (filename) => {
+  fs.copyFileSync("./timestamps.txt", `./${filename}.txt`);
+};
+
 const endTrigger = () => {
-  rl.question("\nPress any key to continue. . .", function () {
-    return rl.close();
-  });
+  return rl.close();
 };
 
 const mergeVideos = (
@@ -101,6 +103,8 @@ const mergeVideos = (
 
   console.log("\nTotal processing time:", sexagesimalFormat(timeDiff / 1000));
 
+  console.log("\nCreating copy of timestamps.txt");
+  createTimestampCopy(nameOnly);
   return endTrigger();
 };
 
@@ -119,12 +123,14 @@ const trimFunction = (answer) => {
 
   // Remove carrier return \r and split each timestamps by newlines \n. Filter the array with the correct timestamp format.
   // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-  let tsRegex = /\d{2}:\d{2}:\d{2}\.\d{9}\s\d{2}:\d{2}:\d{2}\.\d{9}/;
+  let tsRegex = /\d{2}:\d{2}:\d{2}\.\d{3,9}\s\d{2}:\d{2}:\d{2}\.\d{3,9}/;
   let totalTime = 0;
   let timeArr = [];
+  const timestampArr = ts.split("\n");
 
-  let arr = ts.split("\r\n").filter((timestamp, idx) => {
+  let arr = timestampArr.filter((timestamp, idx) => {
     if (idx === 0) return true;
+    if (timestamp === "" && idx === timestampArr.length - 1) return false;
 
     // Check if the 2nd timestamp in each index is lower than the 1st timestamp. Each index will be split first by whitespace to make it into a subarray.
     // i.e., [[00:06:00.000000000,00:05:00.000000000]] will give an error
@@ -243,23 +249,6 @@ const trimFunction = (answer) => {
 
   if (tsError) return endTrigger();
 
-  let arrCopy = [...arr];
-  let parentArr = [];
-
-  // Make an array with subarrays containing 15 timestamp pairs in each taken from a copy of 'arr' and store it inside parentArr.
-  // i.e., [[timestamp1 timestamp2, timestamp3 timestamp4, etc...]]. 'timestamp1 timestamp2' is considered 1 timestamp pair
-  // and there will be 15 pairs in each subarray.
-  const tsPairs = 15;
-  let childArrNum = Math.ceil(arr.length / tsPairs);
-  for (let i = 0; i < childArrNum; i++) {
-    let childArr = [];
-    for (let j = 0; j <= tsPairs - 1; j++) {
-      if (arrCopy.length === 0) break;
-      childArr.push(arrCopy.shift());
-    }
-    parentArr.push(childArr);
-  }
-
   let counter = 0;
   let ffmpegScripts = [];
 
@@ -270,37 +259,23 @@ const trimFunction = (answer) => {
   let videosDirPath = "./" + nameOnly;
   let videosDir = fs.readdirSync(videosDirPath);
 
-  /* Map the parentArr and output a string of commands which will be executed later. Each command will process up to 15 video segments at a time.
-  Example output would be:
-  ffmpeg -v warning -stats -i "input.mkv" -ss 00:00:01.468000000 -to 00:00:03.303000000 -r 60 "./input/input_001.mkv" -ss 00:00:05.105000000 -to 00:00:06.907000000 -r 60 "./input/input_002.mkv" -ss 00:00:08.475000000 -to 00:00:10.143000000 -r 60 "./input/input_003.mkv" -ss 00:00:11.745000000 -to 00:00:13.514000000 -r 60 "./input/input_004.mkv" -ss 00:00:15.115000000 -to 00:00:16.850000000 -r 60 "./input/input_005.mkv" -ss 00:00:17.150000000 -to 00:00:19.319000000 -r 60 "./input/input_006.mkv" -ss 00:00:21.188000000 -to 00:00:22.222000000 -r 60 "./input/input_007.mkv" -ss 00:00:23.924000000 -to 00:00:25.559000000 -r 60 "./input/input_008.mkv" -ss 00:00:27.394000000 -to 00:00:29.363000000 -r 60 "./input/input_009.mkv" -ss 00:00:31.331000000 -to 00:00:33.634000000 -r 60 "./input/input_010.mkv" -ss 00:00:36.069000000 -to 00:00:39.473000000 -r 60 "./input/input_011.mkv" -ss 00:00:40.974000000 -to 00:00:43.043000000 -r 60 "./input/input_012.mkv" -ss 00:00:44.878000000 -to 00:00:46.947000000 -r 60 "./input/input_013.mkv" -ss 00:00:48.715000000 -to 00:00:50.350000000 -r 60 "./input/input_014.mkv" -ss 00:00:51.985000000 -to 00:00:53.787000000 -r 60 "./input/input_015.mkv"
-  ffmpeg -v warning -stats -i "input.mkv" -ss 00:00:55.622000000 -to 00:00:57.891000000 -r 60 "./input/input_016.mkv"
-  etc...
-  */
+  tsSplit.forEach((ts) => {
+    counter++;
+    let number = "";
 
-  parentArr.forEach((arr) => {
-    let str = `ffmpeg -v warning -stats -i "${name}"`;
-    arr.forEach((ts) => {
-      counter++;
-      let to = ts.replace(/\s/g, " -to ");
-      let number = "";
-
-      if (counter < 10) {
-        number = "00" + counter;
-      } else if (counter < 100) {
-        number = "0" + counter;
-      } else {
-        number += `${counter}`;
-      }
-
-      // Check first if the fileName already exists. If it does, skip.
-      if (videosDir.includes(`${nameOnly}_${number}.${extensionName}`)) return;
-      str += ` -ss ${to} -r 60 -crf 17 "${videosDirPath}/${nameOnly}_${number}.${extensionName}"`;
-    });
-
-    // Only add the string to ffmpegScript if the string changed (Meaning it has videos to process).
-    if (str !== `ffmpeg -v warning -stats -i "${name}"`) {
-      ffmpegScripts.push(str);
+    if (counter < 10) {
+      number = "00" + counter;
+    } else if (counter < 100) {
+      number = "0" + counter;
+    } else {
+      number += `${counter}`;
     }
+
+    // Check first if the fileName already exists. If it does, skip.
+    const outputFilename = `${nameOnly}_${number}.${extensionName}`;
+    if (videosDir.includes(outputFilename)) return;
+    const cmd = `ffmpeg -v warning -stats -ss ${ts[0]} -to ${ts[1]} -i "${name}" -r 60 "${videosDirPath}/${outputFilename}"`;
+    ffmpegScripts.push(cmd);
   });
 
   const options = { stdio: "inherit" };
@@ -329,7 +304,6 @@ const trimFunction = (answer) => {
   );
 
   videosDir.forEach((file, index) => {
-    // Each video segment loses about 0.023 seconds of content based on multiple testing.
     let durationInSeconds = Number(
       execSync(
         `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videosDirPath}/${file}"`
