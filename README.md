@@ -1,23 +1,24 @@
 # Video Trimmer
 
-A simple video trimmer for Windows using FFmpeg, mpv and Node.js.
+A simple video trimmer for Linux using FFmpeg, mpv and Node.js.
 
 ## Requirements
 
+- xclip
 - Node.js
 - FFmpeg & FFProbe
 - mpv video player
 
 ## Setup
 
-- Install Node.js, FFmpeg, FFProbe, and mpv as your video player.
-- Make sure to add FFmpeg & FFProbe to Windows Path using Environment variables.
-- Copy and paste the contents of the script folder into `%APPDATA%/mpv/scripts`.
+- Install xclip, Node.js, FFmpeg, FFProbe, and mpv as your video player.
+- Make sure to add FFmpeg & FFProbe to your Environment variables.
+- Copy and paste the contents of the script folder into mpv's config directory. e.g. `~/.config/mpv/scripts`.
 - Make the /mpv/scripts folder if you dont have one yet.
 
 ## Usage
 
-Make sure to place the video file in the same directory as these files.
+Make sure to place the video file in the same directory as `index.js` & `timestamps.txt`.
 
 First, put the name of the video file including its extension at the top of timestamps.txt. Then list the timestamps of the video segments that you want to trim out on the next line moving forward. **Don't** leave empty lines.
 
@@ -43,7 +44,7 @@ sampleVideo.mp4
 00:06:37.363633333 00:07:16.536100000
 ```
 
-This example will cut the video into five segments:
+This example will cut the video one by one:
 from `00:04:21.427833333` to `00:04:52.191900000`, and then
 from `00:05:04.470833333` to `00:05:44.243900000`, and so on.
 

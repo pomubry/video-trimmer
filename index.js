@@ -6,6 +6,11 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+const offset = 0; // offset in seconds
+if (offset !== 0) {
+  console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${offset} seconds`);
+}
+
 const sexagesimalFormat = (durationInSeconds) => {
   let hour = Math.floor(durationInSeconds / 3600);
   let minute = Math.floor((durationInSeconds % 3600) / 60);
@@ -123,10 +128,10 @@ const trimFunction = (answer) => {
 
   // Remove carrier return \r and split each timestamps by newlines \n. Filter the array with the correct timestamp format.
   // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-  let tsRegex = /\d{2}:\d{2}:\d{2}\.\d{3,9}\s\d{2}:\d{2}:\d{2}\.\d{3,9}/;
+  let tsRegex = /^\d{2}:\d{2}:\d{2}\.\d{3,9}\s\d{2}:\d{2}:\d{2}\.\d{3,9}$/;
   let totalTime = 0;
   let timeArr = [];
-  const timestampArr = ts.split("\n");
+  const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
   let arr = timestampArr.filter((timestamp, idx) => {
     if (idx === 0) return true;
@@ -136,6 +141,7 @@ const trimFunction = (answer) => {
     // i.e., [[00:06:00.000000000,00:05:00.000000000]] will give an error
     // because 00:05:00.000000000 is lesser/earlier than 00:06:00.000000000. Time format will be converted to seconds for evaluation.
     // If the format is valid, add each videos' duration to the variable 'totalTime' for the output's expected total duration.
+
     if (tsRegex.test(timestamp)) {
       let timeStamps = timestamp.split(/\s/g);
 
@@ -172,7 +178,7 @@ const trimFunction = (answer) => {
     );
     console.log("  Example: 10:00:00.123456789 11:00:00.123456789");
     console.log(
-      "\n* Timestamp format should be in sexagesimal system and the seconds' format should be 9 decimal places long. \n  Example: 12:34:56.123456789."
+      "\n* Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. \n  Example: 12:34:56.123456789."
     );
     console.log("\n* Don't leave any empty lines.");
     return endTrigger();
@@ -234,7 +240,18 @@ const trimFunction = (answer) => {
 
   // Split the strings inside the array by whitespaces.
   // The result would be in form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
-  let tsSplit = arr.map((ts) => ts.split(/\s/));
+  let tsSplit = arr.map((ts) => {
+    let tsArr = ts.split(/\s/);
+
+    if (offset !== 0) {
+      tsArr = tsArr.map((singleTs) => {
+        let tsInSeconds = sexagesimalToSeconds(singleTs);
+        return sexagesimalFormat(tsInSeconds + offset);
+      });
+    }
+
+    return tsArr;
+  });
 
   // Check if the 1st timestamp inside the next subarray is equal to the 2nd timestamp in the previous subarray.
   // i.e., [[00:01:00.000000000,00:05:00.000000000],[00:05:00.00000000,00:10:00.000000000]] will give an error.
