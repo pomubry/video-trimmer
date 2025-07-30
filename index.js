@@ -128,7 +128,8 @@ const trimFunction = (answer) => {
 
   // Remove carrier return \r and split each timestamps by newlines \n. Filter the array with the correct timestamp format.
   // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-  let tsRegex = /^\d{2}:\d{2}:\d{2}\.\d{3,9}\s\d{2}:\d{2}:\d{2}\.\d{3,9}$/;
+  const tsRegex = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
+  let lineRegex = new RegExp(`^${tsRegex} ${tsRegex}$`);
   let totalTime = 0;
   let timeArr = [];
   const timestampArr = ts.split("\n").map((ts) => ts.trim());
@@ -142,7 +143,7 @@ const trimFunction = (answer) => {
     // because 00:05:00.000000000 is lesser/earlier than 00:06:00.000000000. Time format will be converted to seconds for evaluation.
     // If the format is valid, add each videos' duration to the variable 'totalTime' for the output's expected total duration.
 
-    if (tsRegex.test(timestamp)) {
+    if (lineRegex.test(timestamp)) {
       let timeStamps = timestamp.split(/\s/g);
 
       // Convert the time string format into seconds.
