@@ -292,7 +292,7 @@ const trimFunction = (answer) => {
     // Check first if the fileName already exists. If it does, skip.
     const outputFilename = `${nameOnly}_${number}.${extensionName}`;
     if (videosDir.includes(outputFilename)) return;
-    const cmd = `ffmpeg -v warning -stats -ss ${ts[0]} -to ${ts[1]} -i "${name}" -crf 18 "${videosDirPath}/${outputFilename}"`;
+    const cmd = `ffmpeg -v warning -stats -ss ${ts[0]} -to ${ts[1]} -i "${name}" -crf 18 -c:v h264 "${videosDirPath}/${outputFilename}"`;
     ffmpegScripts.push(cmd);
   });
 
