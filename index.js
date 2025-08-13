@@ -6,7 +6,13 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const offset = 0; // offset in seconds
+//===== CONFIG =====
+
+const offset = 0; // offset in seconds.
+const fps = 0; // override in case of low fps from VFR inputs.
+
+//===== CONFIG =====
+
 if (offset !== 0) {
   console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${offset} seconds`);
 }
