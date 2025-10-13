@@ -10,6 +10,7 @@ const rl = readline.createInterface({
 
 const offset = 0; // offset in seconds.
 const fps = 0; // override in case of low fps from VFR inputs.
+const hevc = false; // encoding defaults to h264.
 
 //===== CONFIG =====
 
@@ -304,7 +305,7 @@ const trimFunction = (answer) => {
     `-ss ${ts[0]}`,
     `-to ${ts[1]}`,
     `-i "${name}"`,
-    "-crf 18 -c:v h264",
+    `${hevc ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
     `${fps === 0 ? "" : `-r ${fps}`}`,
     `"${videosDirPath}/${outputFilename}"`
     ];
