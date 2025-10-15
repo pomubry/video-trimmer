@@ -1,0 +1,23 @@
+{
+  "name": "video-trimmer",
+  "version": "1.0.0",
+  "description": "A script-based video trimmer using Node.js, FFmpeg, and mpv.",
+  "main": "index.ts",
+  "scripts": {
+    "build": "npx tsc"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pomubry/video-trimmer.git"
+  },
+  "author": "pomubry",
+  "bugs": {
+    "url": "https://github.com/pomubry/video-trimmer/issues"
+  },
+  "homepage": "https://github.com/pomubry/video-trimmer#readme",
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "typescript": "^5.9.3"
+  }
+}
