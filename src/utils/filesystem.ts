@@ -3,7 +3,7 @@ import path = require("node:path");
 import {execSync} from "child_process";
 
 import {execSyncOptions, extensionName, segmentListFilename, supportedExtensions, tsInput} from "../lib/config.js";
-import {sexagesimalFormat} from "./formatter.js";
+import {errorMsgFormatter, sexagesimalFormat} from "./formatter.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
 
@@ -14,8 +14,9 @@ export const createTimestampCopy = (filename: string) => {
 // Check if the video specified is present in the current directory.
 export const checkVideoFile = (videoFile: string) => {
     if (!fs.readdirSync(".").includes(videoFile)) {
-        throw new Error(`
-        ${videoFile} was not found. Make sure to put the correct video filename at the top(Line 1) of ${tsInput}`);
+        throw new Error(
+            errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${tsInput}.`)
+        );
     }
 
     checkFileExtension(videoFile)
@@ -26,11 +27,11 @@ const checkFileExtension = (videoFile: string) => {
     const extensionError = supportedExtensions.indexOf(extensionName);
 
     if (extensionError === -1) {
-        throw new Error(`
-    The video format ${extensionName} is not supported.
-    Only the following extensions are supported:
-    
+        throw new Error(
+            errorMsgFormatter(`The video format ${extensionName} is not supported.
+Only the following extensions are valid:
     ${supportedExtensions}`)
+        )
     }
 }
 
@@ -44,7 +45,11 @@ export const getVideoSegmentErrors = (videoSegments: string[], videoSegmentDurat
             ).toString()
         );
 
-        if (videoSegmentDurations[index] === undefined) throw new Error(`Duration of video for index ${index} might be undefined.`)
+        if (videoSegmentDurations[index] === undefined) {
+            throw new Error(
+                errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
+            )
+        }
 
         let difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
         let isGreaterThanOne = Number(difference) > 1;
@@ -53,8 +58,7 @@ export const getVideoSegmentErrors = (videoSegments: string[], videoSegmentDurat
             possibleErrors.push(file);
         }
 
-        console.info(
-            `\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${sexagesimalFormat(
+        console.log(`\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${sexagesimalFormat(
                 videoSegmentDurations[index]
             )}) vs Actual (${sexagesimalFormat(
                 durationInSeconds
@@ -77,8 +81,7 @@ const createSegmentList = (videoSegments: string[], baseOutputPath: string) => {
     );
     fs.writeFileSync(segmentListFilename, myList);
 
-    console.log(`
-    ${segmentListFilename} has been created temporarily. . .`);
+    console.log(`\n${segmentListFilename} has been created temporarily. . .`);
 }
 
 const removeVideoSegments = (
@@ -86,22 +89,19 @@ const removeVideoSegments = (
 ) => {
     let removedFiles = 0;
     if (isVideoSegmentKept === "no") {
-        console.log(`
-        Removing video segments:
-        `);
+        console.log("\nRemoving video segments:");
 
         videoSegments.forEach((file) => {
-            console.log(file);
+            console.log("\t", file);
             fs.unlinkSync(`${baseOutputPath}/${file}`);
             removedFiles++;
         });
 
-        console.log(`
-        Total video segments removed: ${removedFiles}`);
+        console.log(`\nTotal video segments removed: ${removedFiles}`);
 
         videoSegments = fs.readdirSync(baseOutputPath);
         if (videoSegments.length > 0) {
-            console.log(`Some files remain inside the \x1b[95m${nameOnly}\x1b[0m directory. You can manually remove it safely.`);
+            console.log(`\nSome files remain inside the \x1b[95m${nameOnly}\x1b[0m directory. You can manually remove it safely.`);
         } else {
             fs.rmdirSync(nameOnly);
         }
@@ -123,8 +123,7 @@ export const mergeVideos = (mergeOptions: MergeOptions) => {
 
     // Concatenate all the videos listed in the mylist.txt.
     if (fs.readdirSync(".").includes(outputFile)) {
-        console.info(`
-        The file [\x1b[94m${outputFile}\x1b[0m] already exists. Removing file before making a new one. . .`);
+        console.log(`\nThe file [\x1b[94m${outputFile}\x1b[0m] already exists. Removing file before making a new one. . .`);
 
         fs.unlinkSync(outputFile);
     }
@@ -134,23 +133,25 @@ export const mergeVideos = (mergeOptions: MergeOptions) => {
     execSync(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFile}"`, execSyncOptions);
 
     console.log(`
-    \x1b[32m${outputFile}\x1b[0m has been created.
+\x1b[32m${outputFile}\x1b[0m has been created.
     
-    Removing ${segmentListFilename}. . .`);
+Removing ${segmentListFilename}. . .`
+    );
 
     fs.unlinkSync(segmentListFilename);
 
     const {totalTime, timeDiff, ...rest} = mergeOptions
 
     removeVideoSegments(rest)
+    createTimestampCopy(nameOnly);
+
+    console.log(`\nCreating copy of ${tsInput}. . .`)
 
     let sexagesimal = sexagesimalFormat(totalTime);
 
     console.log(`
-    Video trimmer has finished. Merged output video should be about ${sexagesimal} long. 
-    Total processing time: ${sexagesimalFormat(timeDiff / 1000)}
-    
-    Creating copy of ${tsInput}. . .`);
+Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+Total processing time: ${sexagesimalFormat(timeDiff / 1000)}`
+    );
 
-    createTimestampCopy(nameOnly);
 };

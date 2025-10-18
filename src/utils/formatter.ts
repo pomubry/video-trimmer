@@ -66,3 +66,5 @@ export const getVideoSegmentRegExp = (nameOnly: string) => {
     return new RegExp(pattern);
 }
 
+export const errorMsgFormatter = (message: string) => `\n${message}\n`
+

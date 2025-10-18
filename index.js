@@ -1,314 +1,422 @@
-import fs from "fs";
-import { execSync } from "child_process";
-import readline from "readline";
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
-//===== CONFIG =====
-const offset = 0; // offset in seconds.
-const fps = 0; // override in case of low fps from VFR inputs.
-const hevc = false; // encoding defaults to h264.
-//===== CONFIG =====
-if (offset !== 0) {
-    console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${offset} seconds`);
-}
-const execSyncOptions = { stdio: "inherit" };
-const sexagesimalFormat = (durationInSeconds) => {
-    let hour = Math.floor(durationInSeconds / 3600);
-    let minute = Math.floor((durationInSeconds % 3600) / 60);
-    let seconds = (durationInSeconds % 3600) % 60;
-    return `${hour < 10 ? "0" + hour : hour}:${minute < 10 ? "0" + minute : minute}:${seconds < 10 ? "0" + seconds.toFixed(4) : seconds.toFixed(3)}`;
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
 };
-const sexagesimalToSeconds = (sexagesimal) => {
-    let timeArr = sexagesimal.split(":");
-    return timeArr.reduce((acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index), 0);
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// src/index.ts
+var import_fs3 = __toESM(require("fs"), 1);
+var import_readline = __toESM(require("readline"), 1);
+var import_child_process2 = require("child_process");
+
+// src/lib/config.ts
+var offset = 0;
+var fps = 0;
+var hevc = false;
+var execSyncOptions = { stdio: "inherit" };
+var supportedExtensions = [
+  "webm",
+  "mkv",
+  "flv",
+  "avi",
+  "ts",
+  "mov",
+  "wmv",
+  "amv",
+  "mp4",
+  "m4p",
+  "m4v",
+  "mpg",
+  "mpeg"
+];
+var extensionName = "mp4";
+var tsInput = "timestamps.txt";
+var segmentListFilename = "mylist.txt";
+
+// src/utils/filesystem.ts
+var import_fs = __toESM(require("fs"), 1);
+var import_child_process = require("child_process");
+
+// src/utils/formatter.ts
+var sexagesimalFormat = (durationInSeconds) => {
+  let hour = Math.floor(durationInSeconds / 3600);
+  let minute = Math.floor(durationInSeconds % 3600 / 60);
+  let seconds = durationInSeconds % 3600 % 60;
+  return `${hour < 10 ? "0" + hour : hour}:${minute < 10 ? "0" + minute : minute}:${seconds < 10 ? "0" + seconds.toFixed(4) : seconds.toFixed(3)}`;
 };
-const createTimestampCopy = (filename) => {
-    fs.copyFileSync("./timestamps.txt", `./${filename}.txt`);
+var sexagesimalToSeconds = (sexagesimal) => {
+  let timeArr = sexagesimal.split(":");
+  return timeArr.reduce(
+    (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
+    0
+  );
 };
-const endTrigger = () => {
-    return rl.close();
-};
-const mergeVideos = ({ videosDir, videosDirPath, nameOnly, answer, totalTime, timeDiff }) => {
-    // List the relative path of each video files and save it into mylist.txt.
-    let myList = "";
-    videosDir.forEach((file, index) => (myList += `${index !== 0 ? "\n" : ""}file '${videosDirPath}/${file}'`));
-    fs.writeFileSync("mylist.txt", myList);
-    console.log("\nmylist.txt has been created temporarily. . .");
-    // Concatenate all the videos listed in the mylist.txt.
-    const outputFile = `${nameOnly} (Result).mp4`;
-    if (fs.readdirSync(".").includes(outputFile)) {
-        // Check first if the output filename already exists. Delete if it does.
-        console.log(`\nThe file [\x1b[94m${outputFile}\x1b[0m] already exists. Removing file before making a new one. . .`);
-        fs.unlinkSync(outputFile);
+var tsRegex = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}";
+var lineRegex = new RegExp(`^${tsRegex} ${tsRegex}$`);
+var generateFFmpegScripts = ({ input, output, tsArray, path: path2, dir }) => {
+  let counter = 0;
+  let ffmpegScripts = [];
+  tsArray.forEach((ts) => {
+    counter++;
+    let number = "";
+    if (counter < 10) {
+      number = "00" + counter;
+    } else if (counter < 100) {
+      number = "0" + counter;
+    } else {
+      number += `${counter}`;
     }
-    console.log("\nMerging video segments. . .");
-    execSync(`ffmpeg -v warning -f concat -safe 0 -i mylist.txt -c copy "${outputFile}"`, execSyncOptions);
-    console.log(`\n\x1b[32m${outputFile}\x1b[0m has been created.`);
-    // Remove mylist.txt.
-    console.log("\nRemoving mylist.txt. . .");
-    fs.unlinkSync("mylist.txt");
-    // Remove the video segments that were created in the process.
-    let removedFiles = 0;
-    if (answer === "no") {
-        console.log("\nRemoving video segments:\n");
-        videosDir.forEach((file) => {
-            console.log(file);
-            fs.unlinkSync(`${videosDirPath}/${file}`);
-            removedFiles++;
-        });
-        console.log(`\nTotal video segments removed: ${removedFiles}`);
-        videosDir = fs.readdirSync(videosDirPath);
-        if (videosDir.length > 0) {
-            console.log(`\nSome files remain inside the \x1b[95m${nameOnly}\x1b[0m directory. You could manually remove it safely.`);
-        }
-        else {
-            fs.rmdirSync(nameOnly);
-        }
-    }
-    else {
-        console.log("\nVideo segments will be kept.");
-    }
-    let sexagesimal = sexagesimalFormat(totalTime);
-    console.log(`\nVideo trimmer has finished. Merged output video should be about ${sexagesimal} long.`);
-    console.log("\nTotal processing time:", sexagesimalFormat(timeDiff / 1000));
-    console.log("\nCreating copy of timestamps.txt");
-    createTimestampCopy(nameOnly);
-    return endTrigger();
-};
-const trimFunction = (answer) => {
-    let ts = "";
-    // Read the contents of the ts.txt file. Return an error if its empty.
-    ts += fs.readFileSync("timestamps.txt");
-    if (ts.length === 0) {
-        console.log("\nTimestamps not found");
-        return endTrigger();
-    }
-    // Check for timestamps errors.
-    let tsError = false;
-    // Remove carrier return \r and split each timestamps by newlines \n. Filter the array with the correct timestamp format.
-    // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-    const tsRegex = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
-    let lineRegex = new RegExp(`^${tsRegex} ${tsRegex}$`);
-    let totalTime = 0;
-    let timeArr = [];
-    const timestampArr = ts.split("\n").map((ts) => ts.trim());
-    let arr = timestampArr.filter((timestamp, idx) => {
-        if (idx === 0)
-            return true;
-        if (timestamp === "" && idx === timestampArr.length - 1)
-            return false;
-        // Check if the 2nd timestamp in each index is lower than the 1st timestamp. Each index will be split first by whitespace to make it into a subarray.
-        // i.e., [[00:06:00.000000000,00:05:00.000000000]] will give an error
-        // because 00:05:00.000000000 is lesser/earlier than 00:06:00.000000000. Time format will be converted to seconds for evaluation.
-        // If the format is valid, add each videos' duration to the variable 'totalTime' for the output's expected total duration.
-        if (lineRegex.test(timestamp)) {
-            let timeStamps = timestamp.split(/\s/g);
-            // Convert the time string format into seconds.
-            let timeStamp1 = sexagesimalToSeconds(timeStamps[0]);
-            let timeStamp2 = sexagesimalToSeconds(timeStamps[1]);
-            if (timeStamp2 <= timeStamp1) {
-                tsError = true;
-                console.log(`\nTimestamp duration error at line ${idx + 1}. 
-          --- Timestamp [${timeStamps[1]}] should be greater than [${timeStamps[0]}].`);
-            }
-            else {
-                totalTime += timeStamp2 - timeStamp1;
-                timeArr.push(timeStamp2 - timeStamp1);
-                return true;
-            }
-        }
-        else {
-            tsError = true;
-            console.log(`\nInvalid timestamp format at line ${idx + 1}: [${timestamp}].`);
-        }
-    });
-    if (tsError) {
-        console.log("\n= = = = = = = = = = H I N T S : = = = = = = = = = =");
-        console.log("\n* Line 1 should be the video filename including its extension. \n  Example: input.mp4.");
-        console.log("\n* Timestamp format for each line(except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.");
-        console.log("  Example: 10:00:00.123456789 11:00:00.123456789");
-        console.log("\n* Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. \n  Example: 12:34:56.123456789.");
-        console.log("\n* Don't leave any empty lines.");
-        return endTrigger();
-    }
-    // Remove the name of the file.
-    const name = arr.shift();
-    // Check if the video specified is present in the current directory.
-    if (!fs.readdirSync(".").includes(name)) {
-        console.log(`\n${name} was not found. Make sure to put the correct video filename at the top(Line 1) of timestamps.txt`);
-        return endTrigger();
-    }
-    // Get the name of the file excluding its extension.
-    const extensionIndex = name.lastIndexOf(".");
-    const nameOnly = name.slice(0, extensionIndex);
-    // Check if input video is in a supported format.
-    const supportedExtensions = [
-        "webm",
-        "mkv",
-        "flv",
-        "avi",
-        "MTS",
-        "M2TS",
-        "TS",
-        "ts",
-        "mov",
-        "qt",
-        "wmv",
-        "amv",
-        "mp4",
-        "m4p",
-        "m4v",
-        "mpg",
-        "mp2",
-        "mpeg",
-        "mpe",
-        "mpv",
-        "m2v",
-        "svi",
-        "3gp",
-        "3g2",
+    const outputFilename = `${output}_${number}.${extensionName}`;
+    if (dir.includes(outputFilename)) return;
+    const cmd = [
+      "ffmpeg -v warning -stats",
+      `-ss ${ts[0]}`,
+      `-to ${ts[1]}`,
+      `-i "${input}"`,
+      `${hevc ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
+      `${fps === 0 ? "" : `-r ${fps}`}`,
+      `"${path2}/${outputFilename}"`
     ];
-    const extensionName = name.slice(extensionIndex + 1);
-    const extensionError = supportedExtensions.indexOf(extensionName);
-    if (extensionError === -1) {
-        console.log("\nVideo format error.");
-        console.log(`\nThe video format ${extensionName} you have specified is not supported.`);
-        console.log("\nOnly the following extensions are supported:\n");
-        console.log(supportedExtensions);
-        return endTrigger();
-    }
-    // Split the strings inside the array by whitespaces.
-    // The result would be in form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
-    let tsSplit = arr.map((ts) => {
-        let tsArr = ts.split(/\s/);
-        if (offset !== 0) {
-            tsArr = tsArr.map((singleTs) => {
-                let tsInSeconds = sexagesimalToSeconds(singleTs);
-                return sexagesimalFormat(tsInSeconds + offset);
-            });
-        }
-        return tsArr;
-    });
-    // Check if the 1st timestamp inside the next subarray is equal to the 2nd timestamp in the previous subarray.
-    // i.e., [[00:01:00.000000000,00:05:00.000000000],[00:05:00.00000000,00:10:00.000000000]] will give an error.
-    for (let i = 1; i < tsSplit.length; i++) {
-        const currentTimestamp1 = tsSplit[i]?.[0];
-        const previousTimestamp2 = tsSplit[i - 1]?.[1];
-        const isUndefined = currentTimestamp1 === undefined || previousTimestamp2 === undefined;
-        if (isUndefined) {
-            tsError = true;
-            console.error(`
-            Timestamps at line ${i + 1} or ${i} are might be undefined.`);
-            continue;
-        }
-        if (currentTimestamp1 === previousTimestamp2) {
-            tsError = true;
-            console.log(`
-            Timestamp error at line ${i + 1} and line ${i + 2}.
-            --- Two instances of timestamp [${previousTimestamp2}] were found.`);
-        }
-    }
-    if (tsError)
-        return endTrigger();
-    let counter = 0;
-    let ffmpegScripts = [];
-    if (!fs.readdirSync(".").includes(nameOnly)) {
-        fs.mkdirSync(nameOnly);
-    }
-    let videosDirPath = "./" + nameOnly;
-    let videosDir = fs.readdirSync(videosDirPath);
-    tsSplit.forEach((ts) => {
-        counter++;
-        let number = "";
-        if (counter < 10) {
-            number = "00" + counter;
-        }
-        else if (counter < 100) {
-            number = "0" + counter;
-        }
-        else {
-            number += `${counter}`;
-        }
-        // Check first if the fileName already exists. If it does, skip.
-        const outputFilename = `${nameOnly}_${number}.${extensionName}`;
-        if (videosDir.includes(outputFilename))
-            return;
-        const cmd = [
-            "ffmpeg -v warning -stats",
-            `-ss ${ts[0]}`,
-            `-to ${ts[1]}`,
-            `-i "${name}"`,
-            `${hevc ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
-            `${fps === 0 ? "" : `-r ${fps}`}`,
-            `"${videosDirPath}/${outputFilename}"`
-        ];
-        ffmpegScripts.push(cmd.filter(Boolean).join(" "));
-    });
-    console.log("\nExecuting FFmpeg. This may take a while. . .\n");
-    let ffmpegRan = false;
-    let time1 = Date.now();
-    ffmpegScripts.forEach((script) => {
-        console.log(script + "\n");
-        ffmpegRan = true;
-        execSync(script, execSyncOptions);
-    });
-    let time2 = Date.now();
-    // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
-    // where XYZ is the number of the video, i.e., fileName_001.mp4.
-    const regexPattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
-    const regex = new RegExp(regexPattern);
-    videosDir = fs.readdirSync(videosDirPath);
-    videosDir = videosDir.filter((file) => regex.test(file));
-    // Check the duration of each video segments and if the computed duration is almost equal to actual.
-    let possibleErrors = [];
-    console.log(`${ffmpegRan ? "\n" : ""}Checking each video segment's length. . .`);
-    videosDir.forEach((file, index) => {
-        let durationInSeconds = Number(execSync(`ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videosDirPath}/${file}"`).toString());
-        if (timeArr[index] === undefined)
-            throw new Error(`Duration of video for index ${index} might be undefined.`);
-        let difference = Math.abs(timeArr[index] - durationInSeconds).toFixed(4);
-        let isGreaterThanOne = Number(difference) > 1;
-        if (isGreaterThanOne) {
-            possibleErrors.push(file);
-        }
-        console.log(`\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${sexagesimalFormat(timeArr[index])}) vs Actual (${sexagesimalFormat(durationInSeconds)}). Difference: ${difference} seconds.${isGreaterThanOne
-            ? "\x1b[31m Possible Error!\x1b[0m"
-            : "\x1b[32m Result Okay!\x1b[0m"}`);
-    });
-    const mergeVideosArgs = {
-        videosDir,
-        videosDirPath,
-        nameOnly,
-        answer,
-        totalTime,
-        timeDiff: time2 - time1,
-    };
-    if (possibleErrors.length > 0) {
-        console.log("\nPlease check the following files for possible errors:\n");
-        console.log(possibleErrors);
-        console.log("\nNote that small disparities are normal and you may continue if you have not found errors in any video segments.");
-        rl.question("\nAbort merging videos? (Default: no) | [yes|no]: ", function (abort) {
-            if (abort === "yes") {
-                console.log("\nAborting merging of video segments. . .");
-                return endTrigger();
-            }
-            else {
-                mergeVideos(mergeVideosArgs);
-            }
-        });
-    }
-    else {
-        console.log("\nNo problems were found with the video segments.");
-        mergeVideos(mergeVideosArgs);
-    }
+    ffmpegScripts.push(cmd.filter(Boolean).join(" "));
+  });
+  return ffmpegScripts;
 };
-rl.question("\nKeep all video segments? (Default: yes) | [yes|no]: ", function (answer) {
-    try {
-        trimFunction(answer);
+var getVideoSegmentRegExp = (nameOnly) => {
+  const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
+  return new RegExp(pattern);
+};
+var errorMsgFormatter = (message) => `
+${message}
+`;
+
+// src/utils/filesystem.ts
+var path = require("node:path");
+var createTimestampCopy = (filename) => {
+  import_fs.default.copyFileSync(`./${tsInput}`, `./${filename}.txt`);
+};
+var checkVideoFile = (videoFile) => {
+  if (!import_fs.default.readdirSync(".").includes(videoFile)) {
+    throw new Error(
+      errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${tsInput}.`)
+    );
+  }
+  checkFileExtension(videoFile);
+};
+var checkFileExtension = (videoFile) => {
+  const extensionName2 = path.extname(videoFile).toLowerCase().slice(1);
+  const extensionError = supportedExtensions.indexOf(extensionName2);
+  if (extensionError === -1) {
+    throw new Error(
+      errorMsgFormatter(`The video format ${extensionName2} is not supported.
+Only the following extensions are valid:
+    ${supportedExtensions}`)
+    );
+  }
+};
+var getVideoSegmentErrors = (videoSegments, videoSegmentDurations, baseOutputPath) => {
+  let possibleErrors = [];
+  videoSegments.forEach((file, index) => {
+    let durationInSeconds = Number(
+      (0, import_child_process.execSync)(
+        `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${baseOutputPath}/${file}"`
+      ).toString()
+    );
+    if (videoSegmentDurations[index] === void 0) {
+      throw new Error(
+        errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
+      );
     }
-    catch (e) {
-        console.error(e);
+    let difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
+    let isGreaterThanOne = Number(difference) > 1;
+    if (isGreaterThanOne) {
+      possibleErrors.push(file);
     }
+    console.log(
+      `
+[\x1B[94m${file}\x1B[0m] Duration: Computed (${sexagesimalFormat(
+        videoSegmentDurations[index]
+      )}) vs Actual (${sexagesimalFormat(
+        durationInSeconds
+      )}). Difference: ${difference} seconds.${isGreaterThanOne ? "\x1B[31m Possible Error!\x1B[0m" : "\x1B[32m Result Okay!\x1B[0m"}`
+    );
+  });
+  return possibleErrors;
+};
+var createSegmentList = (videoSegments, baseOutputPath) => {
+  let myList = "";
+  videoSegments.forEach(
+    (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${baseOutputPath}/${file}'`
+  );
+  import_fs.default.writeFileSync(segmentListFilename, myList);
+  console.log(`
+${segmentListFilename} has been created temporarily. . .`);
+};
+var removeVideoSegments = ({ isVideoSegmentKept, nameOnly, baseOutputPath, videoSegments }) => {
+  let removedFiles = 0;
+  if (isVideoSegmentKept === "no") {
+    console.log("\nRemoving video segments:");
+    videoSegments.forEach((file) => {
+      console.log("	", file);
+      import_fs.default.unlinkSync(`${baseOutputPath}/${file}`);
+      removedFiles++;
+    });
+    console.log(`
+Total video segments removed: ${removedFiles}`);
+    videoSegments = import_fs.default.readdirSync(baseOutputPath);
+    if (videoSegments.length > 0) {
+      console.log(`
+Some files remain inside the \x1B[95m${nameOnly}\x1B[0m directory. You can manually remove it safely.`);
+    } else {
+      import_fs.default.rmdirSync(nameOnly);
+    }
+  } else {
+    console.log("\nVideo segments will be kept.");
+  }
+};
+var mergeVideos = (mergeOptions) => {
+  const {
+    videoSegments,
+    nameOnly,
+    baseOutputPath
+  } = mergeOptions;
+  createSegmentList(videoSegments, baseOutputPath);
+  const outputFile = `${nameOnly} (Result).${extensionName}`;
+  if (import_fs.default.readdirSync(".").includes(outputFile)) {
+    console.log(`
+The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before making a new one. . .`);
+    import_fs.default.unlinkSync(outputFile);
+  }
+  console.log("\nMerging video segments. . .");
+  (0, import_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFile}"`, execSyncOptions);
+  console.log(
+    `
+\x1B[32m${outputFile}\x1B[0m has been created.
+    
+Removing ${segmentListFilename}. . .`
+  );
+  import_fs.default.unlinkSync(segmentListFilename);
+  const { totalTime, timeDiff, ...rest } = mergeOptions;
+  removeVideoSegments(rest);
+  createTimestampCopy(nameOnly);
+  console.log(`
+Creating copy of ${tsInput}. . .`);
+  let sexagesimal = sexagesimalFormat(totalTime);
+  console.log(
+    `
+Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+Total processing time: ${sexagesimalFormat(timeDiff / 1e3)}`
+  );
+};
+
+// src/lib/timestamp.ts
+var import_fs2 = __toESM(require("fs"), 1);
+var readTimestamps = () => {
+  let ts = "";
+  try {
+    ts += import_fs2.default.readFileSync(tsInput);
+  } catch (error) {
+    throw new Error(
+      errorMsgFormatter("The file [timestamps.txt] was not found!")
+    );
+  }
+  return ts;
+};
+var isDuplicateTimestamp = (prevTimestamp, timestamp1, idx) => {
+  const prevTimestamp2 = prevTimestamp.split(/\s/)[1];
+  if (prevTimestamp2 === void 0) {
+    console.error(`
+The 2nd timestamp from line ${idx} might be undefined.`);
+    return true;
+  }
+  if (timestamp1 === prevTimestamp2) {
+    console.error(
+      `
+Duplicate timestamp found at line ${idx} and line ${idx + 1}:
+    --- Two instances of timestamp [${timestamp1}] were found.`
+    );
+    return true;
+  }
+  return false;
+};
+var processTimestamps = (timestampArr) => {
+  let tsError = false;
+  let totalTime = 0;
+  let videoSegmentDurations = [];
+  let arr = timestampArr.reduce((acc, timestamp, idx) => {
+    if (idx === 0) return [...acc, timestamp];
+    if (timestamp === "" && idx === timestampArr.length - 1) return acc;
+    if (lineRegex.test(timestamp)) {
+      let timestamps = timestamp.split(/\s/g);
+      let timestamp1 = sexagesimalToSeconds(timestamps[0]);
+      let timestamp2 = sexagesimalToSeconds(timestamps[1]);
+      if (timestamp2 <= timestamp1) {
+        tsError = true;
+        console.error(
+          `
+Timestamp duration error at line ${idx + 1}:
+    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
+        );
+        return acc;
+      }
+      const prevTimestamp = timestampArr[idx - 1] || "";
+      if (!lineRegex.test(prevTimestamp) && idx > 1) {
+        tsError = true;
+        return acc;
+      }
+      const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx);
+      if (res) {
+        tsError = true;
+        return acc;
+      }
+      totalTime += timestamp2 - timestamp1;
+      videoSegmentDurations.push(timestamp2 - timestamp1);
+      return [...acc, timestamp];
+    } else {
+      tsError = true;
+      console.error(`
+Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
+      return acc;
+    }
+  }, []);
+  if (tsError) throw new Error(
+    errorMsgFormatter("Timestamps errors were found.")
+  );
+  return { arr, totalTime, videoSegmentDurations };
+};
+
+// src/index.ts
+var rl = import_readline.default.createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
+if (offset !== 0) {
+  console.log("\x1B[35m%s\x1B[0m", `Offset Value: ${offset} seconds`);
+}
+var main = (answer) => {
+  let ts = readTimestamps();
+  const timestampArr = ts.split("\n").map((ts2) => ts2.trim());
+  console.log("\nProcessing timestamps. . .");
+  const result = processTimestamps(timestampArr);
+  const { totalTime, videoSegmentDurations } = result;
+  let { arr } = result;
+  const videoFile = arr.shift();
+  if (videoFile === void 0) throw new Error(
+    errorMsgFormatter("Video filename was not found. The processed array is empty.")
+  );
+  console.log("\nChecking video file. . .");
+  checkVideoFile(videoFile);
+  let tsSplit = arr.map((ts2) => {
+    let tsArr = ts2.split(/\s/);
+    if (offset !== 0) {
+      tsArr = tsArr.map((singleTs) => {
+        let tsInSeconds = sexagesimalToSeconds(singleTs);
+        return sexagesimalFormat(tsInSeconds + offset);
+      });
+    }
+    return tsArr;
+  });
+  const nameOnly = videoFile.slice(0, videoFile.lastIndexOf("."));
+  if (!import_fs3.default.readdirSync(".").includes(nameOnly)) {
+    import_fs3.default.mkdirSync(nameOnly);
+  }
+  let baseOutputPath = "./" + nameOnly;
+  let videoSegments = import_fs3.default.readdirSync(baseOutputPath);
+  const ffmpegArgs = {
+    input: videoFile,
+    output: nameOnly,
+    tsArray: tsSplit,
+    path: baseOutputPath,
+    dir: videoSegments
+  };
+  let ffmpegScripts = generateFFmpegScripts(ffmpegArgs);
+  console.log("\nExecuting FFmpeg. This may take a while. . .");
+  let time1 = Date.now();
+  ffmpegScripts.forEach((script) => {
+    console.log("\n" + script);
+    (0, import_child_process2.execSync)(script, execSyncOptions);
+  });
+  let time2 = Date.now();
+  const videoSegmentRegExp = getVideoSegmentRegExp(nameOnly);
+  videoSegments = import_fs3.default.readdirSync(baseOutputPath).filter((file) => videoSegmentRegExp.test(file));
+  console.log("\nChecking each video segment's length. . .");
+  let possibleErrors = getVideoSegmentErrors(videoSegments, videoSegmentDurations, baseOutputPath);
+  const mergeVideosArgs = {
+    videoSegments,
+    nameOnly,
+    baseOutputPath,
+    isVideoSegmentKept: answer,
+    totalTime,
+    timeDiff: time2 - time1
+  };
+  if (possibleErrors.length > 0) {
+    console.error(
+      `
+Please check the following files for possible errors:
+
+${possibleErrors.map((err) => "	" + err).join("\n")}
+
+Note that small disparities are normal and you may continue if you have not found an error in any video segments.`
+    );
+    rl.question(
+      "\nAbort merging videos? (Default: no) | [yes|no]: ",
+      function(abort) {
+        if (abort.toLocaleLowerCase() === "yes") {
+          console.log("\nAbort merging of video segments. . .");
+          return rl.close();
+        } else {
+          mergeVideos(mergeVideosArgs);
+          return rl.close();
+        }
+      }
+    );
+  } else {
+    console.log("\nNo problems were found with the video segments.");
+    mergeVideos(mergeVideosArgs);
+    return rl.close();
+  }
+};
+rl.question(
+  "\nKeep all video segments? (Default: yes) | [yes|no]: ",
+  (isVideoSegmentKept) => {
+    try {
+      main(isVideoSegmentKept.toLocaleLowerCase());
+    } catch (e) {
+      console.log(
+        `
+= = = = = = = = = = H I N T S : = = = = = = = = = =
+
+* Line 1 should be the video filename including its extension. 
+    Example: input.mp4.
+
+* Timestamp format for each line (except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.
+    Example: 10:00:00.123456789 11:00:00.123456789
+
+* Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 
+    Example: 12:34:56.123456789
+
+* Don't leave any empty lines.
+`
+      );
+      console.error(e);
+      rl.close();
+    }
+  }
+);

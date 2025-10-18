@@ -8,7 +8,7 @@ import {
     generateFFmpegScripts,
     sexagesimalFormat,
     sexagesimalToSeconds,
-    getVideoSegmentRegExp
+    getVideoSegmentRegExp, errorMsgFormatter
 } from "./utils/formatter.js";
 import {processTimestamps, readTimestamps} from "./lib/timestamp.js";
 
@@ -20,24 +20,25 @@ const rl = readline.createInterface({
 });
 
 if (offset !== 0) {
-    console.info("\x1b[35m%s\x1b[0m", `Offset Value: ${offset} seconds`);
+    console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${offset} seconds`);
 }
 
 const main = (answer: string) => {
     let ts = readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
+    console.log("\nProcessing timestamps. . .")
     const result = processTimestamps(timestampArr);
     const {totalTime, videoSegmentDurations} = result;
-    let {arr, tsError} = result;
-
-    if (tsError) return;
+    let {arr} = result;
 
     // Remove the name of the file from the array.
     const videoFile = arr.shift();
-    if (videoFile === undefined) throw new Error(`
-    Video filename was not found. The processed array is empty.`)
+    if (videoFile === undefined) throw new Error(
+        errorMsgFormatter("Video filename was not found. The processed array is empty.")
+    )
 
+    console.log("\nChecking video file. . .")
     checkVideoFile(videoFile);
 
     /*
@@ -73,13 +74,11 @@ const main = (answer: string) => {
     }
     let ffmpegScripts: string[] = generateFFmpegScripts(ffmpegArgs)
 
-    console.log(`
-    Executing FFmpeg. This may take a while. . .
-    `);
+    console.log("\nExecuting FFmpeg. This may take a while. . .");
 
     let time1 = Date.now();
     ffmpegScripts.forEach((script) => {
-        console.info(script + "\n");
+        console.log("\n" + script);
         execSync(script, execSyncOptions);
     });
     let time2 = Date.now();
@@ -92,7 +91,7 @@ const main = (answer: string) => {
         .filter((file) => videoSegmentRegExp.test(file));
 
     // Check the duration of each video segments and if the computed duration is almost equal to the actual duration.
-    console.log("Checking each video segment's length. . .");
+    console.log("\nChecking each video segment's length. . .");
     let possibleErrors = getVideoSegmentErrors(videoSegments, videoSegmentDurations, baseOutputPath);
 
     const mergeVideosArgs: MergeOptions = {
@@ -106,11 +105,12 @@ const main = (answer: string) => {
 
     if (possibleErrors.length > 0) {
         console.error(`
-        Please check the following files for possible errors:
-        
-        ${possibleErrors}
-        
-        Note that small disparities are normal and you may continue if you have not found an error in any video segments.`)
+Please check the following files for possible errors:
+
+${possibleErrors.map(err => "\t" + err).join("\n")}
+
+Note that small disparities are normal and you may continue if you have not found an error in any video segments.`
+        )
 
         rl.question(
             "\nAbort merging videos? (Default: no) | [yes|no]: ",
@@ -133,13 +133,30 @@ const main = (answer: string) => {
 
 rl.question(
     "\nKeep all video segments? (Default: yes) | [yes|no]: ",
-    function (isVideoSegmentKept) {
+    isVideoSegmentKept => {
         try {
             main(isVideoSegmentKept.toLocaleLowerCase())
         } catch (e) {
-            console.error(e);
-        }
+            console.log(`
+= = = = = = = = = = H I N T S : = = = = = = = = = =
 
-        rl.close();
+* Line 1 should be the video filename including its extension. 
+    Example: input.mp4.
+
+* Timestamp format for each line (except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.
+    Example: 10:00:00.123456789 11:00:00.123456789
+
+* Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 
+    Example: 12:34:56.123456789
+
+* Don't leave any empty lines.
+`
+            )
+            console.error(e);
+            rl.close();
+        }
     }
 );
+
+//TODO create regex for special characters in input filename
+//TODO loop multiple vids.txt

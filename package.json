@@ -4,7 +4,8 @@
   "description": "A script-based video trimmer using Node.js, FFmpeg, and mpv.",
   "main": "index.ts",
   "scripts": {
-    "build": "npx tsc"
+    "test": "npx tsc",
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
   },
   "type": "module",
   "repository": {
@@ -18,6 +19,7 @@
   "homepage": "https://github.com/pomubry/video-trimmer#readme",
   "devDependencies": {
     "@types/node": "^24.7.2",
+    "esbuild": "0.25.11",
     "typescript": "^5.9.3"
   }
 }

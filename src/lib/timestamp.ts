@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import {lineRegex, sexagesimalToSeconds} from "../utils/formatter.js";
+import {errorMsgFormatter, lineRegex, sexagesimalToSeconds} from "../utils/formatter.js";
 import {tsInput} from "./config.js";
 
 export const readTimestamps = () => {
@@ -8,10 +8,10 @@ export const readTimestamps = () => {
 
     try {
         ts += fs.readFileSync(tsInput);
-        if (ts.length === 0) throw new Error(`
-        Timestamps not found!`);
     } catch (error) {
-        throw error;
+        throw new Error(
+            errorMsgFormatter("The file [timestamps.txt] was not found!")
+        );
     }
 
     return ts;
@@ -25,21 +25,21 @@ i.e.,
 will give an error.
 */
 const isDuplicateTimestamp = (
-    prevTimestamp: string | undefined,
-    timestamp1: number,
+    prevTimestamp: string,
+    timestamp1: string,
     idx: number
 ) => {
-    if (prevTimestamp === undefined) throw new Error(`
-    The previous timestamp might be undefined.`);
+    const prevTimestamp2 = prevTimestamp.split(/\s/)[1]
+    if (prevTimestamp2 === undefined) {
+        console.error(`\nThe 2nd timestamp from line ${idx} might be undefined.`);
+        return true
+    }
 
-    const prevTimeStamp2 = prevTimestamp.split(/\s/)[1]
-    if (prevTimeStamp2 === undefined) throw new Error(`
-    The 2nd timestamp from the previous iteration might be undefined.`);
-
-    if (timestamp1 === Number(prevTimeStamp2)) {
+    if (timestamp1 === prevTimestamp2) {
         console.error(`
-        Timestamp error at line ${idx} and line ${idx + 1}.
-        --- Two instances of timestamp [${timestamp1}] were found.`);
+Duplicate timestamp found at line ${idx} and line ${idx + 1}:
+    --- Two instances of timestamp [${timestamp1}] were found.`
+        );
         return true
     }
 
@@ -65,55 +65,48 @@ export const processTimestamps = (timestampArr: string[]) => {
         if (timestamp === "" && idx === timestampArr.length - 1) return acc;
 
         if (lineRegex.test(timestamp)) {
-            let timeStamps = timestamp.split(/\s/g) as [string, string];
+            let timestamps = timestamp.split(/\s/g) as [string, string];
 
             // Convert the time string format into seconds.
-            let timeStamp1 = sexagesimalToSeconds(timeStamps[0]);
-            let timeStamp2 = sexagesimalToSeconds(timeStamps[1]);
+            let timestamp1 = sexagesimalToSeconds(timestamps[0]);
+            let timestamp2 = sexagesimalToSeconds(timestamps[1]);
 
-            // For listing all possible timestamps errors
-            if (timeStamp2 <= timeStamp1) {
+            // Check for all possible timestamp errors
+            if (timestamp2 <= timestamp1) {
                 tsError = true;
                 console.error(`
-                Timestamp duration error at line ${idx + 1}. 
-                --- Timestamp [${timeStamps[1]}] should be greater than [${
-                    timeStamps[0]
-                }].`);
+Timestamp duration error at line ${idx + 1}:
+    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
+                );
                 return acc
-            } else {
-                totalTime += timeStamp2 - timeStamp1;
-                videoSegmentDurations.push(timeStamp2 - timeStamp1);
-
-                const res = isDuplicateTimestamp(acc[acc.length - 1], timeStamp1, idx)
-                if (res) tsError = true;
-
-                return [...acc, timestamp];
             }
+
+            const prevTimestamp = timestampArr[idx - 1] || "";
+            if (!lineRegex.test(prevTimestamp) && idx > 1) {
+                tsError = true;
+                return acc
+            }
+
+            const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx)
+            if (res) {
+                tsError = true;
+                return acc
+            }
+
+            totalTime += timestamp2 - timestamp1;
+            videoSegmentDurations.push(timestamp2 - timestamp1);
+
+            return [...acc, timestamp];
         } else {
             tsError = true;
-            console.error(`
-            Invalid timestamp format at line ${idx + 1}: [${timestamp}].`
-            );
+            console.error(`\nInvalid timestamp format at line ${idx + 1}: [${timestamp}].`);
             return acc
         }
     }, [] as string[]);
 
-    if (tsError) {
-        throw new Error(`
-      = = = = = = = = = = H I N T S : = = = = = = = = = =
-      
-      * Line 1 should be the video filename including its extension. 
-        Example: input.mp4.
+    if (tsError) throw new Error(
+        errorMsgFormatter("Timestamps errors were found.")
+    )
 
-      * Timestamp format for each line(except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.
-        Example: 10:00:00.123456789 11:00:00.123456789
-
-      * Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 
-        Example: 12:34:56.123456789.
-
-      * Don't leave any empty lines.
-      `)
-    }
-
-    return {arr, tsError, totalTime, videoSegmentDurations};
+    return {arr, totalTime, videoSegmentDurations};
 }
