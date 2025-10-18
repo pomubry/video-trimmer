@@ -1,7 +1,7 @@
 {
   "name": "video-trimmer",
   "version": "1.0.0",
-  "description": "A script-based video trimmer using Node.js, FFmpeg, and mpv.",
+  "description": "A script to quickly trim a video using Node.js, FFmpeg, and mpv.",
   "main": "index.ts",
   "scripts": {
     "test": "npx tsc",
