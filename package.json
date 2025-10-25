@@ -4,7 +4,7 @@
   "description": "A script to quickly trim a video using Node.js, FFmpeg, and mpv.",
   "main": "index.ts",
   "scripts": {
-    "test": "npx tsc",
+    "test": "npx tsc && vitest",
     "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
   },
   "type": "module",
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^24.7.2",
     "esbuild": "0.25.11",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }
