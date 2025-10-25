@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import {errorMsgFormatter, lineRegex, sexagesimalToSeconds} from "../utils/formatter.js";
+import {errorMsgFormatter, timestampRegex, sexagesimalToSeconds} from "../utils/formatter.js";
 import {tsInput} from "./config.js";
 
 export const readTimestamps = () => {
@@ -64,7 +64,7 @@ export const processTimestamps = (timestampArr: string[]) => {
         if (idx === 0) return [...acc, timestamp];
         if (timestamp === "" && idx === timestampArr.length - 1) return acc;
 
-        if (lineRegex.test(timestamp)) {
+        if (timestampRegex.test(timestamp)) {
             let timestamps = timestamp.split(/\s/g) as [string, string];
 
             // Convert the time string format into seconds.
@@ -82,7 +82,7 @@ Timestamp duration error at line ${idx + 1}:
             }
 
             const prevTimestamp = timestampArr[idx - 1] || "";
-            if (!lineRegex.test(prevTimestamp) && idx > 1) {
+            if (!timestampRegex.test(prevTimestamp) && idx > 1) {
                 tsError = true;
                 return acc
             }

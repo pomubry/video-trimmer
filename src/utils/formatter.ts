@@ -2,6 +2,10 @@ import {extensionName, fps, hevc} from "../lib/config.js";
 
 import type {FFmpegArguments} from "../types/index.js";
 
+// Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
+const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
+export const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
+
 export const sexagesimalFormat = (durationInSeconds: number) => {
     let hour = Math.floor(durationInSeconds / 3600);
     let minute = Math.floor((durationInSeconds % 3600) / 60);
@@ -12,16 +16,16 @@ export const sexagesimalFormat = (durationInSeconds: number) => {
 };
 
 export const sexagesimalToSeconds = (sexagesimal: string) => {
+    if (!(new RegExp(`^${timestampPattern}$`)).test(sexagesimal)) {
+        throw new Error(errorMsgFormatter("Invalid sexagesimal"));
+    }
+
     let timeArr = sexagesimal.split(":");
     return timeArr.reduce(
         (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
         0
     );
 };
-
-// Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-const tsRegex = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
-export const lineRegex = new RegExp(`^${tsRegex} ${tsRegex}$`);
 
 export const generateFFmpegScripts = (
     {input, output, tsArray, path, dir,}: FFmpegArguments

@@ -2,7 +2,7 @@ import fs from "fs";
 import readline from "readline";
 import {execSync} from "child_process";
 
-import {offset, execSyncOptions} from "./lib/config.js";
+import {offset, execSyncOptions, isBatch, tsInput, batchSeparator, batchInput} from "./lib/config.js";
 import {checkVideoFile, getVideoSegmentErrors, mergeVideos} from "./utils/filesystem.js";
 import {
     generateFFmpegScripts,
@@ -103,7 +103,7 @@ const main = (answer: string) => {
         timeDiff: time2 - time1,
     }
 
-    if (possibleErrors.length > 0) {
+    if (!isBatch && possibleErrors.length > 0) {
         console.error(`
 Please check the following files for possible errors:
 
@@ -133,9 +133,22 @@ Note that small disparities are normal and you may continue if you have not foun
 
 rl.question(
     "\nKeep all video segments? (Default: yes) | [yes|no]: ",
-    isVideoSegmentKept => {
+    async isVideoSegmentKept => {
         try {
-            main(isVideoSegmentKept.toLocaleLowerCase())
+            if (isBatch) {
+                let ts = ""
+                ts += fs.readFileSync(batchInput);
+                const tsList = ts.split(batchSeparator)
+                    .map(string => string.trim())
+
+                for (const timestamp of tsList) {
+                    fs.writeFileSync(tsInput, timestamp);
+                    main(isVideoSegmentKept.toLocaleLowerCase());
+                }
+            } else {
+                main(isVideoSegmentKept.toLocaleLowerCase())
+            }
+
         } catch (e) {
             console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =
@@ -153,8 +166,8 @@ rl.question(
 `
             )
             console.error(e);
-            rl.close();
         }
+        rl.close();
     }
 );
 

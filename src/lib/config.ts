@@ -20,5 +20,8 @@ export const supportedExtensions = [
     "mpeg"
 ];
 export const extensionName = "mp4";
+export const isBatch = false;
+export const batchSeparator = "@batch@";
+export const batchInput = "batch.txt"
 export const tsInput = "timestamps.txt"
 export const segmentListFilename = "mylist.txt"
