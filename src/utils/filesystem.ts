@@ -1,5 +1,5 @@
 import fs from "fs";
-import path = require("node:path");
+import path from "node:path";
 import {execSync} from "child_process";
 
 import {execSyncOptions, extensionName, segmentListFilename, supportedExtensions, tsInput} from "../lib/config.js";

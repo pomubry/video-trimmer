@@ -1,8 +1,9 @@
 import type {ExecSyncOptions} from "node:child_process";
 
-export const offset = 0; // offset in seconds.
-export const fps = 0; // override in case of low fps from VFR inputs.
-export const hevc = false; // encoding defaults to h264.
+export const offset: number = 0; // offset in seconds.
+export const fps: number = 0; // override in case of low fps from VFR inputs.
+export const hevc: boolean = false; // encoding defaults to h264.
+export const extensionName: string = "mp4";
 export const execSyncOptions: ExecSyncOptions = {stdio: "inherit"};
 export const supportedExtensions = [
     "webm",
@@ -19,7 +20,6 @@ export const supportedExtensions = [
     "mpg",
     "mpeg"
 ];
-export const extensionName = "mp4";
 export const isBatch = false;
 export const batchSeparator = "@batch@";
 export const batchInput = "batch.txt"

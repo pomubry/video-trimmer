@@ -1,6 +1,4 @@
-import {extensionName, fps, hevc} from "../lib/config.js";
-
-import type {FFmpegArguments} from "../types/index.js";
+import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 
 // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
 const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
@@ -27,23 +25,30 @@ export const sexagesimalToSeconds = (sexagesimal: string) => {
     );
 };
 
+export const videoCounter = (counter: number) => {
+    let number = "";
+
+    if (counter < 10) {
+        number = "00" + counter;
+    } else if (counter < 100) {
+        number = "0" + counter;
+    } else {
+        number += `${counter}`;
+    }
+
+    return number
+}
+
 export const generateFFmpegScripts = (
-    {input, output, tsArray, path, dir,}: FFmpegArguments
+    {input, output, tsArray, path, dir,}: FFmpegArguments,
+    {fps, hevc, extensionName}: FFmpegConfig
 ) => {
     let counter = 0;
     let ffmpegScripts: string[] = [];
 
     tsArray.forEach((ts) => {
         counter++;
-        let number = "";
-
-        if (counter < 10) {
-            number = "00" + counter;
-        } else if (counter < 100) {
-            number = "0" + counter;
-        } else {
-            number += `${counter}`;
-        }
+        let number = videoCounter(counter)
 
         // Check first if the fileName already exists. If it does, skip.
         const outputFilename = `${output}_${number}.${extensionName}`;
@@ -65,7 +70,7 @@ export const generateFFmpegScripts = (
     return ffmpegScripts
 }
 
-export const getVideoSegmentRegExp = (nameOnly: string) => {
+export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) => {
     const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
     return new RegExp(pattern);
 }
