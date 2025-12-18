@@ -1,3 +1,4 @@
+import path from "node:path";
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 
 // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
@@ -40,18 +41,19 @@ export const videoCounter = (counter: number) => {
 }
 
 export const generateFFmpegScripts = (
-    {input, output, tsArray, path, dir,}: FFmpegArguments,
+    {input, tsArray, dir,}: FFmpegArguments,
     {fps, hevc, extensionName}: FFmpegConfig
 ) => {
     let counter = 0;
     let ffmpegScripts: string[] = [];
+    const basename = path.parse(input).name
 
     tsArray.forEach((ts) => {
         counter++;
         let number = videoCounter(counter)
 
         // Check first if the fileName already exists. If it does, skip.
-        const outputFilename = `${output}_${number}.${extensionName}`;
+        const outputFilename = `${basename}_${number}.${extensionName}`;
         if (dir.includes(outputFilename)) return;
 
         const cmd = [
@@ -61,7 +63,7 @@ export const generateFFmpegScripts = (
             `-i "${input}"`,
             `${hevc ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
             `${fps === 0 ? "" : `-r ${fps}`}`,
-            `"${path}/${outputFilename}"`
+            `"${path.join(basename, outputFilename)}"`
         ];
 
         ffmpegScripts.push(cmd.filter(Boolean).join(" "));

@@ -62,9 +62,7 @@ const main = (answer: string) => {
     let videoSegments = fs.readdirSync(baseOutputPath);
     const ffmpegArgs: FFmpegArguments = {
         input: videoFile,
-        output: nameOnly,
         tsArray: tsSplit,
-        path: baseOutputPath,
         dir: videoSegments
     }
     let ffmpegScripts: string[] = formatter.generateFFmpegScripts(ffmpegArgs, config)

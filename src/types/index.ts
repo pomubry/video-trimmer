@@ -11,9 +11,7 @@ export interface MergeOptions {
 
 export interface FFmpegArguments {
     input: string,
-    output: string
     tsArray: string[][],
-    path: string,
     dir: string[],
 }
 
