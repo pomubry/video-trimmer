@@ -1,4 +1,4 @@
-import * as config from "../lib/config.js";
+import * as config from "../utils/config.js";
 
 export interface MergeOptions {
     videoSegments: string[],

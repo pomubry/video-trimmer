@@ -1,6 +1,6 @@
 import path from "node:path"
 import {describe, expect, test, vi} from "vitest";
-import * as config from "../lib/config.js";
+import * as config from "./config.js";
 import {
     generateFFmpegScripts,
     getVideoSegmentRegExp,

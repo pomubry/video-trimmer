@@ -1,21 +1,4 @@
-import fs from "fs";
-
-import {errorMsgFormatter, timestampRegex, sexagesimalToSeconds} from "../utils/formatter.js";
-import {tsInput} from "./config.js";
-
-export const readTimestamps = () => {
-    let ts = "";
-
-    try {
-        ts += fs.readFileSync(tsInput);
-    } catch (error) {
-        throw new Error(
-            errorMsgFormatter("The file [timestamps.txt] was not found!")
-        );
-    }
-
-    return ts;
-}
+import {errorMsgFormatter, sexagesimalToSeconds, timestampRegex} from "./formatter.js";
 
 /*
 Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.

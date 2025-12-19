@@ -2,10 +2,13 @@ import fs from "fs";
 import readline from "readline";
 import {execSync} from "child_process";
 
-import * as config from "./lib/config.js";
-import * as filesystem from "./utils/filesystem.js";
+import * as config from "./utils/config.js";
+import * as validator from "./utils/validator.js";
 import * as formatter from "./utils/formatter.js";
-import * as timestamp from "./lib/timestamp.js";
+import * as timestamp from "./utils/timestamp.js";
+
+import * as filesystem from "./services/filesystem.js";
+import {getVideoSegmentErrors} from "./services/ffmpeg.js";
 
 import type {FFmpegArguments, MergeOptions} from "./types/index.js";
 
@@ -19,7 +22,7 @@ if (config.offset !== 0) {
 }
 
 const main = (answer: string) => {
-    let ts = timestamp.readTimestamps();
+    let ts = filesystem.readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
     console.log("\nProcessing timestamps. . .")
@@ -34,7 +37,9 @@ const main = (answer: string) => {
     )
 
     console.log("\nChecking video file. . .")
+
     filesystem.checkVideoFile(videoFile);
+    validator.checkFileExtension(videoFile);
 
     /*
     Split the strings inside the array by whitespaces.
@@ -85,7 +90,7 @@ const main = (answer: string) => {
 
     // Check the duration of each video segments and if the computed duration is almost equal to the actual duration.
     console.log("\nChecking each video segment's length. . .");
-    let possibleErrors = filesystem.getVideoSegmentErrors(videoSegments, videoSegmentDurations, baseOutputPath);
+    let possibleErrors = getVideoSegmentErrors(videoSegments, videoSegmentDurations, baseOutputPath);
 
     const mergeVideosArgs: MergeOptions = {
         videoSegments,
