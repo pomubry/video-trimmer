@@ -2,8 +2,8 @@ import path from "node:path";
 import {vi, describe, test, beforeEach, afterEach, expect} from 'vitest'
 import {fs, vol} from "memfs";
 
+import {FILENAME_OPTIONS} from "../utils/config.js";
 import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
-import * as config from "../utils/config.js";
 import {
     checkVideoFile,
     mergeVideos,
@@ -44,7 +44,7 @@ const randomText = "some text"
 
 describe("Timestamp reader", () => {
     test("Should read the timestamp file", () => {
-        fs.writeFileSync(config.timestampsFilename, randomText);
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
 
         const res = readTimestamps();
 
@@ -52,12 +52,12 @@ describe("Timestamp reader", () => {
     })
 
     test("Should read a different file according to config", () => {
-        vi.spyOn(config, "timestampsFilename", "get").mockReturnValue(newTimestampFilename)
-        fs.writeFileSync(config.timestampsFilename, randomText);
+        vi.spyOn(FILENAME_OPTIONS, "TIMESTAMPS_FILENAME", "get").mockReturnValue(newTimestampFilename)
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
 
         const res = readTimestamps();
 
-        expect(config.timestampsFilename).toBe(newTimestampFilename)
+        expect(FILENAME_OPTIONS.TIMESTAMPS_FILENAME).toBe(newTimestampFilename)
         expect(res).toBe(randomText)
     })
 
@@ -92,7 +92,7 @@ describe("Merge video function", () => {
     hoistedArgs.outputFilename = outputFilenameFormatter(baseName);
 
     beforeEach(() => {
-        fs.writeFileSync(config.timestampsFilename, randomText);
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
         fs.writeFileSync(otherFile, randomText);
         fs.mkdirSync(baseName)
         videoSegments.forEach(segment => {
@@ -104,7 +104,7 @@ describe("Merge video function", () => {
     test("Should merge the video segments", async () => {
         const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
         const expectedFiles = [
-            config.timestampsFilename,
+            FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
             outputFilenameFormatter(baseName),
             baseName,
             `${baseName}.txt`
@@ -138,7 +138,7 @@ describe("Merge video function", () => {
         const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
         args.isVideoSegmentKept = "no";
         const expectedFiles = [
-            config.timestampsFilename,
+            FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
             outputFilenameFormatter(baseName),
             `${baseName}.txt`
         ]

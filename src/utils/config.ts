@@ -1,27 +1,30 @@
 import type {ExecSyncOptions} from "node:child_process";
 
-export const offset: number = 0; // offset in seconds.
-export const fps: number = 0; // override in case of low fps from VFR inputs.
-export const hevc: boolean = false; // encoding defaults to h264.
-export const extensionName: string = "mp4";
-export const execSyncOptions: ExecSyncOptions = {stdio: "inherit"};
-export const supportedExtensions = [
-    "webm",
-    "mkv",
-    "flv",
-    "avi",
-    "ts",
-    "mov",
-    "wmv",
-    "amv",
-    "mp4",
-    "m4p",
-    "m4v",
-    "mpg",
-    "mpeg"
-];
-export const isBatch = false;
-export const batchSeparator = "@batch@";
-export const batchInput = "batch.txt"
-export const timestampsFilename: string = "timestamps.txt"
-export const segmentListFilename = "mylist.txt"
+export const FFMPEG_OPTIONS: { OFFSET: number, FPS: number, HEVC: boolean, EXEC_SYNC_OPTIONS: ExecSyncOptions } =
+    {
+        OFFSET: 0, // offset in seconds.
+        FPS: 0, // override in case of low fps from VFR inputs.
+        HEVC: false, // encoding defaults to h264.
+        EXEC_SYNC_OPTIONS: {stdio: "inherit"}
+    }
+
+export const FILENAME_OPTIONS = {
+    EXTENSION_NAME: "mp4",
+    TIMESTAMPS_FILENAME: "timestamps.txt" as string,
+    SEGMENT_LIST_FILENAME: "mylist.txt",
+    SUPPORTED_EXTENSIONS: [
+        "webm",
+        "mkv",
+        "flv",
+        "avi",
+        "ts",
+        "mov",
+        "mp4",
+    ]
+}
+
+export const APP_OPTIONS = {
+    IS_BATCH: false,
+    BATCH_SEPARATOR: "@batch@",
+    BATCH_INPUT: "batch.txt"
+}

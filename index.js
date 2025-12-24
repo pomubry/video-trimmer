@@ -5,10 +5,6 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -32,45 +28,34 @@ var import_readline = __toESM(require("readline"), 1);
 var import_child_process = require("child_process");
 
 // src/utils/config.ts
-var config_exports = {};
-__export(config_exports, {
-  batchInput: () => batchInput,
-  batchSeparator: () => batchSeparator,
-  execSyncOptions: () => execSyncOptions,
-  extensionName: () => extensionName,
-  fps: () => fps,
-  hevc: () => hevc,
-  isBatch: () => isBatch,
-  offset: () => offset,
-  segmentListFilename: () => segmentListFilename,
-  supportedExtensions: () => supportedExtensions,
-  timestampsFilename: () => timestampsFilename
-});
-var offset = 0;
-var fps = 0;
-var hevc = false;
-var extensionName = "mp4";
-var execSyncOptions = { stdio: "inherit" };
-var supportedExtensions = [
-  "webm",
-  "mkv",
-  "flv",
-  "avi",
-  "ts",
-  "mov",
-  "wmv",
-  "amv",
-  "mp4",
-  "m4p",
-  "m4v",
-  "mpg",
-  "mpeg"
-];
-var isBatch = false;
-var batchSeparator = "@batch@";
-var batchInput = "batch.txt";
-var timestampsFilename = "timestamps.txt";
-var segmentListFilename = "mylist.txt";
+var FFMPEG_OPTIONS = {
+  OFFSET: 0,
+  // offset in seconds.
+  FPS: 0,
+  // override in case of low fps from VFR inputs.
+  HEVC: false,
+  // encoding defaults to h264.
+  EXEC_SYNC_OPTIONS: { stdio: "inherit" }
+};
+var FILENAME_OPTIONS = {
+  EXTENSION_NAME: "mp4",
+  TIMESTAMPS_FILENAME: "timestamps.txt",
+  SEGMENT_LIST_FILENAME: "mylist.txt",
+  SUPPORTED_EXTENSIONS: [
+    "webm",
+    "mkv",
+    "flv",
+    "avi",
+    "ts",
+    "mov",
+    "mp4"
+  ]
+};
+var APP_OPTIONS = {
+  IS_BATCH: false,
+  BATCH_SEPARATOR: "@batch@",
+  BATCH_INPUT: "batch.txt"
+};
 
 // src/utils/validator.ts
 var import_node_path2 = __toESM(require("node:path"), 1);
@@ -106,46 +91,46 @@ var videoCounter = (counter) => {
   }
   return number;
 };
-var generateFFmpegScripts = ({ input, tsArray, dir }, { fps: fps2, hevc: hevc2, extensionName: extensionName2 }) => {
+var generateFFmpegScripts = ({ input, tsArray, dir }, { FPS, HEVC }) => {
   let counter = 0;
   let ffmpegScripts = [];
   const basename = import_node_path.default.parse(input).name;
   tsArray.forEach((ts) => {
     counter++;
     let number = videoCounter(counter);
-    const outputFilename = `${basename}_${number}.${extensionName2}`;
+    const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
     if (dir.includes(outputFilename)) return;
     const cmd = [
       "ffmpeg -v warning -stats",
       `-ss ${ts[0]}`,
       `-to ${ts[1]}`,
       `-i "${input}"`,
-      `${hevc2 ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
-      `${fps2 === 0 ? "" : `-r ${fps2}`}`,
+      `${HEVC ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
+      `${FPS === 0 ? "" : `-r ${FPS}`}`,
       `"${import_node_path.default.join(basename, outputFilename)}"`
     ];
     ffmpegScripts.push(cmd.filter(Boolean).join(" "));
   });
   return ffmpegScripts;
 };
-var getVideoSegmentRegExp = (nameOnly, extensionName2) => {
-  const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName2}`;
+var getVideoSegmentRegExp = (nameOnly, extensionName) => {
+  const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
   return new RegExp(pattern);
 };
-var outputFilenameFormatter = (basename) => `${basename} (Result).${extensionName}`;
+var outputFilenameFormatter = (basename) => `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
 var errorMsgFormatter = (message) => `
 ${message}
 `;
 
 // src/utils/validator.ts
 var checkFileExtension = (videoFile) => {
-  const extensionName2 = import_node_path2.default.extname(videoFile).toLowerCase().slice(1);
-  const extensionError = supportedExtensions.indexOf(extensionName2);
+  const extensionName = import_node_path2.default.extname(videoFile).toLowerCase().slice(1);
+  const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
   if (extensionError === -1) {
     throw new Error(
-      errorMsgFormatter(`The video format ${extensionName2} is not supported.
+      errorMsgFormatter(`The video format ${extensionName} is not supported.
 Only the following extensions are valid:
-    ${supportedExtensions}`)
+    ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
     );
   }
 };
@@ -220,8 +205,8 @@ var import_node_fs = __toESM(require("node:fs"), 1);
 // src/services/childProcess.ts
 var import_node_path3 = __toESM(require("node:path"), 1);
 var import_node_child_process = require("node:child_process");
-var mergeVideoSegments = (segmentListFilename2, outputFilename, execSyncOptions2) => {
-  (0, import_node_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename2} -c copy "${outputFilename}"`, execSyncOptions2);
+var mergeVideoSegments = (segmentListFilename, outputFilename, execSyncOptions) => {
+  (0, import_node_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFilename}"`, execSyncOptions);
 };
 var getVideoDuration = (baseOutputPath, file) => Number(
   (0, import_node_child_process.execSync)(
@@ -233,10 +218,10 @@ var getVideoDuration = (baseOutputPath, file) => Number(
 var readTimestamps = () => {
   let ts = "";
   try {
-    ts = import_node_fs.default.readFileSync(timestampsFilename, "utf-8");
+    ts = import_node_fs.default.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
   } catch (error) {
     throw new Error(
-      errorMsgFormatter(`The file [${timestampsFilename}] was not found!`)
+      errorMsgFormatter(`The file [${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}] was not found!`)
     );
   }
   return ts;
@@ -244,7 +229,7 @@ var readTimestamps = () => {
 var checkVideoFile = (videoFile) => {
   if (!import_node_fs.default.readdirSync(".").includes(videoFile)) {
     throw new Error(
-      errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${timestampsFilename}.`)
+      errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`)
     );
   }
 };
@@ -258,17 +243,17 @@ Total video segments removed: ${videoSegments.length}`);
     console.log("\nVideo segments will be kept.");
   }
 };
-var createTimestampCopy = (timestampsFilename2, outputFilename) => {
-  import_node_fs.default.copyFileSync(`${timestampsFilename2}`, `${outputFilename}.txt`);
+var createTimestampCopy = (timestampsFilename, outputFilename) => {
+  import_node_fs.default.copyFileSync(`${timestampsFilename}`, `${outputFilename}.txt`);
 };
 var createSegmentList = (videoSegments, baseOutputPath) => {
   let myList = "";
   videoSegments.forEach(
     (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${baseOutputPath}/${file}'`
   );
-  import_node_fs.default.writeFileSync(segmentListFilename, myList);
+  import_node_fs.default.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
   console.log(`
-${segmentListFilename} has been created temporarily. . .`);
+${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME} has been created temporarily. . .`);
 };
 var mergeVideos = (mergeOptions) => {
   const {
@@ -284,19 +269,19 @@ The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before mak
     import_node_fs.default.rmSync(outputFile);
   }
   console.log("\nMerging video segments. . .");
-  mergeVideoSegments(segmentListFilename, outputFile, execSyncOptions);
+  mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
   console.log(
     `
 \x1B[32m${outputFile}\x1B[0m has been created.
     
-Removing ${segmentListFilename}. . .`
+Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
   );
-  import_node_fs.default.rmSync(segmentListFilename);
+  import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
   const { totalTime, timeDiff, ...rest } = mergeOptions;
   removeVideoSegments(rest);
-  createTimestampCopy(timestampsFilename, nameOnly);
+  createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, nameOnly);
   console.log(`
-Creating copy of ${timestampsFilename}. . .`);
+Creating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`);
   let sexagesimal = sexagesimalFormat(totalTime);
   console.log(
     `
@@ -310,8 +295,8 @@ var rl = import_readline.default.createInterface({
   input: process.stdin,
   output: process.stdout
 });
-if (offset !== 0) {
-  console.log("\x1B[35m%s\x1B[0m", `Offset Value: ${offset} seconds`);
+if (FFMPEG_OPTIONS.OFFSET !== 0) {
+  console.log("\x1B[35m%s\x1B[0m", `Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`);
 }
 var main = (answer) => {
   let ts = readTimestamps();
@@ -329,10 +314,10 @@ var main = (answer) => {
   checkFileExtension(videoFile);
   let tsSplit = arr.map((ts2) => {
     let tsArr = ts2.split(/\s/);
-    if (offset !== 0) {
+    if (FFMPEG_OPTIONS.OFFSET !== 0) {
       tsArr = tsArr.map((singleTs) => {
         let tsInSeconds = sexagesimalToSeconds(singleTs);
-        return sexagesimalFormat(tsInSeconds + offset);
+        return sexagesimalFormat(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
       });
     }
     return tsArr;
@@ -348,15 +333,15 @@ var main = (answer) => {
     tsArray: tsSplit,
     dir: videoSegments
   };
-  let ffmpegScripts = generateFFmpegScripts(ffmpegArgs, config_exports);
+  let ffmpegScripts = generateFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS);
   console.log("\nExecuting FFmpeg. This may take a while. . .");
   let time1 = Date.now();
   ffmpegScripts.forEach((script) => {
     console.log("\n" + script);
-    (0, import_child_process.execSync)(script, execSyncOptions);
+    (0, import_child_process.execSync)(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
   });
   let time2 = Date.now();
-  const videoSegmentRegExp = getVideoSegmentRegExp(nameOnly, extensionName);
+  const videoSegmentRegExp = getVideoSegmentRegExp(nameOnly, FILENAME_OPTIONS.EXTENSION_NAME);
   videoSegments = import_fs.default.readdirSync(baseOutputPath).filter((file) => videoSegmentRegExp.test(file));
   console.log("\nChecking each video segment's length. . .");
   let possibleErrors = videoSegments.reduce((acc, file, index) => {
@@ -385,7 +370,7 @@ var main = (answer) => {
     totalTime,
     timeDiff: time2 - time1
   };
-  if (!isBatch && possibleErrors.length > 0) {
+  if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
     console.error(
       `
 Please check the following files for possible errors:
@@ -416,12 +401,12 @@ rl.question(
   "\nKeep all video segments? (Default: yes) | [yes|no]: ",
   async (isVideoSegmentKept) => {
     try {
-      if (isBatch) {
+      if (APP_OPTIONS.IS_BATCH) {
         let ts = "";
-        ts += import_fs.default.readFileSync(batchInput);
-        const tsList = ts.split(batchSeparator).map((string) => string.trim());
+        ts += import_fs.default.readFileSync(APP_OPTIONS.BATCH_INPUT);
+        const tsList = ts.split(APP_OPTIONS.BATCH_SEPARATOR).map((string) => string.trim());
         for (const timestamp of tsList) {
-          import_fs.default.writeFileSync(timestampsFilename, timestamp);
+          import_fs.default.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp);
           main(isVideoSegmentKept.toLocaleLowerCase());
         }
       } else {

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import {extensionName} from "./config.js";
+import {FILENAME_OPTIONS} from "./config.js";
 
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 
@@ -45,7 +45,7 @@ export const videoCounter = (counter: number) => {
 
 export const generateFFmpegScripts = (
     {input, tsArray, dir,}: FFmpegArguments,
-    {fps, hevc, extensionName}: FFmpegConfig
+    {FPS, HEVC}: FFmpegConfig
 ) => {
     let counter = 0;
     let ffmpegScripts: string[] = [];
@@ -56,7 +56,7 @@ export const generateFFmpegScripts = (
         let number = videoCounter(counter)
 
         // Check first if the fileName already exists. If it does, skip.
-        const outputFilename = `${basename}_${number}.${extensionName}`;
+        const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
         if (dir.includes(outputFilename)) return;
 
         const cmd = [
@@ -64,8 +64,8 @@ export const generateFFmpegScripts = (
             `-ss ${ts[0]}`,
             `-to ${ts[1]}`,
             `-i "${input}"`,
-            `${hevc ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
-            `${fps === 0 ? "" : `-r ${fps}`}`,
+            `${HEVC ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
+            `${FPS === 0 ? "" : `-r ${FPS}`}`,
             `"${path.join(basename, outputFilename)}"`
         ];
 
@@ -80,7 +80,7 @@ export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) =
     return new RegExp(pattern);
 }
 
-export const outputFilenameFormatter = (basename: string) => `${basename} (Result).${extensionName}`;
+export const outputFilenameFormatter = (basename: string) => `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
 
 export const errorMsgFormatter = (message: string) => `\n${message}\n`
 

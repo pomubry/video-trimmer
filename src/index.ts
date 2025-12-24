@@ -2,7 +2,7 @@ import fs from "fs";
 import readline from "readline";
 import {execSync} from "child_process";
 
-import * as config from "./utils/config.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./utils/config.js";
 import * as validator from "./utils/validator.js";
 import * as formatter from "./utils/formatter.js";
 import * as timestamp from "./utils/timestamp.js";
@@ -16,8 +16,8 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-if (config.offset !== 0) {
-    console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${config.offset} seconds`);
+if (FFMPEG_OPTIONS.OFFSET !== 0) {
+    console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`);
 }
 
 const main = (answer: string) => {
@@ -47,10 +47,10 @@ const main = (answer: string) => {
     let tsSplit = arr.map((ts) => {
         let tsArr = ts.split(/\s/);
 
-        if (config.offset !== 0) {
+        if (FFMPEG_OPTIONS.OFFSET !== 0) {
             tsArr = tsArr.map((singleTs) => {
                 let tsInSeconds = formatter.sexagesimalToSeconds(singleTs);
-                return formatter.sexagesimalFormat(tsInSeconds + config.offset);
+                return formatter.sexagesimalFormat(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
             });
         }
 
@@ -69,20 +69,20 @@ const main = (answer: string) => {
         tsArray: tsSplit,
         dir: videoSegments
     }
-    let ffmpegScripts: string[] = formatter.generateFFmpegScripts(ffmpegArgs, config)
+    let ffmpegScripts: string[] = formatter.generateFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
 
     console.log("\nExecuting FFmpeg. This may take a while. . .");
 
     let time1 = Date.now();
     ffmpegScripts.forEach((script) => {
         console.log("\n" + script);
-        execSync(script, config.execSyncOptions);
+        execSync(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
     });
     let time2 = Date.now();
 
     // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
     // where XYZ is the number of the video, i.e., fileName_001.mp4.
-    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(nameOnly, config.extensionName);
+    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(nameOnly, FILENAME_OPTIONS.EXTENSION_NAME);
     videoSegments = fs
         .readdirSync(baseOutputPath)
         .filter((file) => videoSegmentRegExp.test(file));
@@ -128,7 +128,7 @@ const main = (answer: string) => {
         timeDiff: time2 - time1,
     }
 
-    if (!config.isBatch && possibleErrors.length > 0) {
+    if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
         console.error(`
 Please check the following files for possible errors:
 
@@ -160,14 +160,14 @@ rl.question(
     "\nKeep all video segments? (Default: yes) | [yes|no]: ",
     async isVideoSegmentKept => {
         try {
-            if (config.isBatch) {
+            if (APP_OPTIONS.IS_BATCH) {
                 let ts = ""
-                ts += fs.readFileSync(config.batchInput);
-                const tsList = ts.split(config.batchSeparator)
+                ts += fs.readFileSync(APP_OPTIONS.BATCH_INPUT);
+                const tsList = ts.split(APP_OPTIONS.BATCH_SEPARATOR)
                     .map(string => string.trim())
 
                 for (const timestamp of tsList) {
-                    fs.writeFileSync(config.timestampsFilename, timestamp);
+                    fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp);
                     main(isVideoSegmentKept.toLocaleLowerCase());
                 }
             } else {

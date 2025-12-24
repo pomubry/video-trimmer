@@ -1,6 +1,7 @@
 import path from "node:path"
-import {describe, expect, test, vi} from "vitest";
-import * as config from "./config.js";
+import {vi, describe, test, beforeEach, expect} from "vitest";
+
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 import {
     generateFFmpegScripts,
     getVideoSegmentRegExp,
@@ -8,7 +9,12 @@ import {
     timestampRegex,
     videoCounter
 } from "./formatter.js";
+
 import type {FFmpegArguments} from "../types/index.js";
+
+beforeEach(() => {
+    vi.restoreAllMocks();
+})
 
 describe("Timestamp Format", () => {
     test("Properly identify formatted timestamp", () => {
@@ -109,14 +115,14 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        expect(generateFFmpegScripts(obj, config)).toEqual(ffmpegScripts)
+        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Skip segments that are already created", () => {
         const obj: FFmpegArguments = {
             input,
             tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: [`${basename}_002.${config.extensionName}`]
+            dir: [`${basename}_002.${FILENAME_OPTIONS.EXTENSION_NAME}`]
         }
 
         const ffmpegScripts = [
@@ -124,7 +130,7 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        expect(generateFFmpegScripts(obj, config)).toEqual(ffmpegScripts)
+        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply hevc encoding if set in config", () => {
@@ -140,8 +146,8 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 23 -c:v hevc "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        vi.spyOn(config, "hevc", "get").mockReturnValueOnce(true);
-        expect(generateFFmpegScripts(obj, config)).toEqual(ffmpegScripts)
+        vi.spyOn(FFMPEG_OPTIONS, "HEVC", "get").mockReturnValueOnce(true);
+        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply framerate set in config", () => {
@@ -157,8 +163,8 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 -r 60 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        vi.spyOn(config, "fps", "get").mockReturnValueOnce(60);
-        expect(generateFFmpegScripts(obj, config)).toEqual(ffmpegScripts)
+        vi.spyOn(FFMPEG_OPTIONS, "FPS", "get").mockReturnValueOnce(60);
+        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply the extension set in config", () => {
@@ -174,21 +180,21 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mkv`)}"`
         ]
 
-        vi.spyOn(config, "extensionName", "get").mockReturnValue("mkv");
-        expect(generateFFmpegScripts(obj, config)).toEqual(ffmpegScripts)
+        vi.spyOn(FILENAME_OPTIONS, "EXTENSION_NAME", "get").mockReturnValue("mkv");
+        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
 
-        vi.resetAllMocks()
-        expect(config.extensionName).toBe("mp4")
+        vi.restoreAllMocks()
+        expect(FILENAME_OPTIONS.EXTENSION_NAME).toBe("mp4")
     })
 })
 
 describe("Video Segment Regexp", () => {
     const input = "input";
-    const {extensionName} = config
-    const regexp = getVideoSegmentRegExp(input, extensionName);
+    const {EXTENSION_NAME} = FILENAME_OPTIONS
+    const regexp = getVideoSegmentRegExp(input, EXTENSION_NAME);
 
     test("Return true for valid filenames", () => {
-        expect(regexp.test(`${input}_001.${extensionName}`)).toBe(true);
+        expect(regexp.test(`${input}_001.${EXTENSION_NAME}`)).toBe(true);
     })
 
     test("Return false for invalid filenames", () => {

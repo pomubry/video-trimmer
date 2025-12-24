@@ -1,4 +1,4 @@
-import * as config from "../utils/config.js";
+import {FFMPEG_OPTIONS} from "../utils/config.js";
 
 export interface MergeOptions {
     videoSegments: string[],
@@ -15,6 +15,6 @@ export interface FFmpegArguments {
     dir: string[],
 }
 
-export type FFmpegConfig = Pick<typeof config, "fps" | "hevc" | "extensionName">
+export type FFmpegConfig = typeof FFMPEG_OPTIONS
 
 export type RemoveVideoSegmentArguments = Omit<MergeOptions, "totalTime" | "timeDiff">

@@ -1,8 +1,8 @@
 import fs from "node:fs";
 
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../utils/config.js";
 import {mergeVideoSegments} from "../services/childProcess.js";
 import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
-import {segmentListFilename, execSyncOptions, timestampsFilename} from "../utils/config.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
 
@@ -10,10 +10,10 @@ export const readTimestamps = () => {
     let ts = "";
 
     try {
-        ts = fs.readFileSync(timestampsFilename, "utf-8");
+        ts = fs.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
     } catch (error) {
         throw new Error(
-            errorMsgFormatter(`The file [${timestampsFilename}] was not found!`)
+            errorMsgFormatter(`The file [${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}] was not found!`)
         );
     }
 
@@ -24,7 +24,7 @@ export const readTimestamps = () => {
 export const checkVideoFile = (videoFile: string) => {
     if (!fs.readdirSync(".").includes(videoFile)) {
         throw new Error(
-            errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${timestampsFilename}.`)
+            errorMsgFormatter(`${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`)
         );
     }
 }
@@ -51,9 +51,9 @@ const createSegmentList = (videoSegments: string[], baseOutputPath: string) => {
         (file, index) =>
             (myList += `${index !== 0 ? "\n" : ""}file '${baseOutputPath}/${file}'`)
     );
-    fs.writeFileSync(segmentListFilename, myList);
+    fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
 
-    console.log(`\n${segmentListFilename} has been created temporarily. . .`);
+    console.log(`\n${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME} has been created temporarily. . .`);
 }
 
 export const mergeVideos = (mergeOptions: MergeOptions) => {
@@ -76,22 +76,22 @@ export const mergeVideos = (mergeOptions: MergeOptions) => {
 
     console.log("\nMerging video segments. . .");
 
-    mergeVideoSegments(segmentListFilename, outputFile, execSyncOptions)
+    mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
     console.log(`
 \x1b[32m${outputFile}\x1b[0m has been created.
     
-Removing ${segmentListFilename}. . .`
+Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
     );
 
-    fs.rmSync(segmentListFilename);
+    fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
 
     const {totalTime, timeDiff, ...rest} = mergeOptions
 
     removeVideoSegments(rest)
-    createTimestampCopy(timestampsFilename, nameOnly);
+    createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, nameOnly);
 
-    console.log(`\nCreating copy of ${timestampsFilename}. . .`)
+    console.log(`\nCreating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`)
 
     let sexagesimal = sexagesimalFormat(totalTime);
 
