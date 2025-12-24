@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import {FILENAME_OPTIONS} from "./config.js";
+import {FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 

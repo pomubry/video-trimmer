@@ -1,9 +1,8 @@
-import {FFMPEG_OPTIONS} from "../utils/config.js";
+import {FFMPEG_OPTIONS} from "../config.js";
 
 export interface MergeOptions {
     videoSegments: string[],
-    nameOnly: string,
-    baseOutputPath: string,
+    basename: string,
     isVideoSegmentKept: string,
     totalTime: number,
     timeDiff: number

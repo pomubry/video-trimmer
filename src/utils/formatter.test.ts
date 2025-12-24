@@ -1,7 +1,7 @@
 import path from "node:path"
 import {vi, describe, test, beforeEach, expect} from "vitest";
 
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {
     generateFFmpegScripts,
     getVideoSegmentRegExp,

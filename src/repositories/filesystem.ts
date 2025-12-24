@@ -1,10 +1,11 @@
 import fs from "node:fs";
 
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../utils/config.js";
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {mergeVideoSegments} from "../services/childProcess.js";
 import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
+import path from "node:path";
 
 export const readTimestamps = () => {
     let ts = "";
@@ -30,11 +31,11 @@ export const checkVideoFile = (videoFile: string) => {
 }
 
 const removeVideoSegments = (
-    {isVideoSegmentKept, nameOnly, videoSegments}: RemoveVideoSegmentArguments
+    {isVideoSegmentKept, basename, videoSegments}: RemoveVideoSegmentArguments
 ) => {
     if (isVideoSegmentKept === "no") {
         console.log("\nRemoving video segments:");
-        fs.rmSync(nameOnly, {recursive: true, force: true});
+        fs.rmSync(basename, {recursive: true, force: true});
         console.log(`\nTotal video segments removed: ${videoSegments.length}`);
     } else {
         console.log("\nVideo segments will be kept.");
@@ -45,11 +46,11 @@ const createTimestampCopy = (timestampsFilename: string, outputFilename: string)
     fs.copyFileSync(`${timestampsFilename}`, `${outputFilename}.txt`);
 };
 
-const createSegmentList = (videoSegments: string[], baseOutputPath: string) => {
+const createSegmentList = (videoSegments: string[], basename: string) => {
     let myList = "";
     videoSegments.forEach(
         (file, index) =>
-            (myList += `${index !== 0 ? "\n" : ""}file '${baseOutputPath}/${file}'`)
+            (myList += `${index !== 0 ? "\n" : ""}file '${path.join(basename, file)}'`)
     );
     fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
 
@@ -59,13 +60,12 @@ const createSegmentList = (videoSegments: string[], baseOutputPath: string) => {
 export const mergeVideos = (mergeOptions: MergeOptions) => {
     const {
         videoSegments,
-        nameOnly,
-        baseOutputPath
+        basename,
     } = mergeOptions;
 
-    createSegmentList(videoSegments, baseOutputPath);
+    createSegmentList(videoSegments, basename);
 
-    const outputFile = outputFilenameFormatter(nameOnly);
+    const outputFile = outputFilenameFormatter(basename);
 
     // Concatenate all the videos listed in the mylist.txt.
     if (fs.readdirSync(".").includes(outputFile)) {
@@ -89,7 +89,7 @@ Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
     const {totalTime, timeDiff, ...rest} = mergeOptions
 
     removeVideoSegments(rest)
-    createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, nameOnly);
+    createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, basename);
 
     console.log(`\nCreating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`)
 

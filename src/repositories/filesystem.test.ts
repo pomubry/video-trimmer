@@ -2,7 +2,7 @@ import path from "node:path";
 import {vi, describe, test, beforeEach, afterEach, expect} from 'vitest'
 import {fs, vol} from "memfs";
 
-import {FILENAME_OPTIONS} from "../utils/config.js";
+import {FILENAME_OPTIONS} from "../config.js";
 import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
 import {
     checkVideoFile,
@@ -82,8 +82,7 @@ describe("Video File Checker", () => {
 describe("Merge video function", () => {
     const args: MergeOptions = {
         videoSegments,
-        baseOutputPath: baseName,
-        nameOnly: baseName,
+        basename: baseName,
         isVideoSegmentKept: "yes",
         timeDiff: 0,
         totalTime: 10

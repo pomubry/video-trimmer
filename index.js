@@ -27,7 +27,7 @@ var import_fs = __toESM(require("fs"), 1);
 var import_readline = __toESM(require("readline"), 1);
 var import_child_process = require("child_process");
 
-// src/utils/config.ts
+// src/config.ts
 var FFMPEG_OPTIONS = {
   OFFSET: 0,
   // offset in seconds.
@@ -215,6 +215,7 @@ var getVideoDuration = (baseOutputPath, file) => Number(
 );
 
 // src/repositories/filesystem.ts
+var import_node_path4 = __toESM(require("node:path"), 1);
 var readTimestamps = () => {
   let ts = "";
   try {
@@ -233,10 +234,10 @@ var checkVideoFile = (videoFile) => {
     );
   }
 };
-var removeVideoSegments = ({ isVideoSegmentKept, nameOnly, videoSegments }) => {
+var removeVideoSegments = ({ isVideoSegmentKept, basename, videoSegments }) => {
   if (isVideoSegmentKept === "no") {
     console.log("\nRemoving video segments:");
-    import_node_fs.default.rmSync(nameOnly, { recursive: true, force: true });
+    import_node_fs.default.rmSync(basename, { recursive: true, force: true });
     console.log(`
 Total video segments removed: ${videoSegments.length}`);
   } else {
@@ -246,10 +247,10 @@ Total video segments removed: ${videoSegments.length}`);
 var createTimestampCopy = (timestampsFilename, outputFilename) => {
   import_node_fs.default.copyFileSync(`${timestampsFilename}`, `${outputFilename}.txt`);
 };
-var createSegmentList = (videoSegments, baseOutputPath) => {
+var createSegmentList = (videoSegments, basename) => {
   let myList = "";
   videoSegments.forEach(
-    (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${baseOutputPath}/${file}'`
+    (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${import_node_path4.default.join(basename, file)}'`
   );
   import_node_fs.default.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
   console.log(`
@@ -258,11 +259,10 @@ ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME} has been created temporarily. . .`);
 var mergeVideos = (mergeOptions) => {
   const {
     videoSegments,
-    nameOnly,
-    baseOutputPath
+    basename
   } = mergeOptions;
-  createSegmentList(videoSegments, baseOutputPath);
-  const outputFile = outputFilenameFormatter(nameOnly);
+  createSegmentList(videoSegments, basename);
+  const outputFile = outputFilenameFormatter(basename);
   if (import_node_fs.default.readdirSync(".").includes(outputFile)) {
     console.log(`
 The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before making a new one. . .`);
@@ -279,7 +279,7 @@ Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
   import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
   const { totalTime, timeDiff, ...rest } = mergeOptions;
   removeVideoSegments(rest);
-  createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, nameOnly);
+  createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, basename);
   console.log(`
 Creating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`);
   let sexagesimal = sexagesimalFormat(totalTime);
@@ -364,8 +364,7 @@ var main = (answer) => {
   }, []);
   const mergeVideosArgs = {
     videoSegments,
-    nameOnly,
-    baseOutputPath,
+    basename: nameOnly,
     isVideoSegmentKept: answer,
     totalTime,
     timeDiff: time2 - time1

@@ -2,10 +2,10 @@ import fs from "fs";
 import readline from "readline";
 import {execSync} from "child_process";
 
-import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./utils/config.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 import * as validator from "./utils/validator.js";
 import * as formatter from "./utils/formatter.js";
-import * as timestamp from "./utils/timestamp.js";
+import {processTimestamps} from "./utils/timestamp.js";
 import * as filesystem from "./repositories/filesystem.js";
 import {getVideoDuration} from "./services/childProcess.js";
 
@@ -25,7 +25,7 @@ const main = (answer: string) => {
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
     console.log("\nProcessing timestamps. . .")
-    const result = timestamp.processTimestamps(timestampArr);
+    const result = processTimestamps(timestampArr);
     const {totalTime, videoSegmentDurations} = result;
     let {arr} = result;
 
@@ -121,8 +121,7 @@ const main = (answer: string) => {
 
     const mergeVideosArgs: MergeOptions = {
         videoSegments,
-        nameOnly,
-        baseOutputPath,
+        basename: nameOnly,
         isVideoSegmentKept: answer,
         totalTime,
         timeDiff: time2 - time1,
