@@ -1,4 +1,7 @@
 import path from "node:path";
+
+import {extensionName} from "./config.js";
+
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 
 // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
@@ -76,6 +79,8 @@ export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) =
     const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
     return new RegExp(pattern);
 }
+
+export const outputFilenameFormatter = (basename: string) => `${basename} (Result).${extensionName}`;
 
 export const errorMsgFormatter = (message: string) => `\n${message}\n`
 

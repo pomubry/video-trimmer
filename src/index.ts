@@ -140,7 +140,7 @@ rl.question(
                     .map(string => string.trim())
 
                 for (const timestamp of tsList) {
-                    fs.writeFileSync(config.tsInput, timestamp);
+                    fs.writeFileSync(config.timestampsFilename, timestamp);
                     main(isVideoSegmentKept.toLocaleLowerCase());
                 }
             } else {

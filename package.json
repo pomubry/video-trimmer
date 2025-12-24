@@ -20,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^24.7.2",
     "esbuild": "0.25.11",
+    "memfs": "^4.51.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

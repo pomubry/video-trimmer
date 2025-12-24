@@ -23,5 +23,5 @@ export const supportedExtensions = [
 export const isBatch = false;
 export const batchSeparator = "@batch@";
 export const batchInput = "batch.txt"
-export const tsInput = "timestamps.txt"
+export const timestampsFilename: string = "timestamps.txt"
 export const segmentListFilename = "mylist.txt"
