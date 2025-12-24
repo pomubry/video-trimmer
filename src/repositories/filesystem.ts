@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import {mergeVideoSegments} from "./childProcess.js";
+import {mergeVideoSegments} from "../services/childProcess.js";
 import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
 import {segmentListFilename, execSyncOptions, timestampsFilename} from "../utils/config.js";
 

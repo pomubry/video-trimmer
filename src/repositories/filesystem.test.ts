@@ -18,7 +18,7 @@ const hoistedArgs = vi.hoisted(() => ({
 
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
-vi.mock(import("./childProcess.js"), async (importOriginal) => {
+vi.mock(import("../services/childProcess.js"), async (importOriginal) => {
     const original = await importOriginal()
     return {
         ...original,
