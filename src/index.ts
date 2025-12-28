@@ -37,8 +37,8 @@ const main = (answer: string) => {
 
     console.log("\nChecking video file. . .")
 
-    filesystem.checkVideoFile(videoFile);
     validator.checkFileExtension(videoFile);
+    filesystem.checkVideoFile(videoFile);
 
     /*
     Split the strings inside the array by whitespaces.
