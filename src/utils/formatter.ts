@@ -47,17 +47,15 @@ export const generateFFmpegScripts = (
     {input, tsArray, dir,}: FFmpegArguments,
     {FPS, HEVC}: FFmpegConfig
 ) => {
-    let counter = 0;
-    let ffmpegScripts: string[] = [];
     const basename = path.parse(input).name
 
-    tsArray.forEach((ts) => {
-        counter++;
-        let number = videoCounter(counter)
+    return tsArray.reduce((acc, ts, idx) => {
+        let counter = idx + 1;
+        const number = videoCounter(counter)
 
         // Check first if the fileName already exists. If it does, skip.
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        if (dir.includes(outputFilename)) return;
+        if (dir.includes(outputFilename)) return acc;
 
         const cmd = [
             "ffmpeg -v warning -stats",
@@ -69,10 +67,8 @@ export const generateFFmpegScripts = (
             `"${path.join(basename, outputFilename)}"`
         ];
 
-        ffmpegScripts.push(cmd.filter(Boolean).join(" "));
-    });
-
-    return ffmpegScripts
+        return [...acc, cmd.filter(Boolean).join(" ")]
+    }, [] as string[])
 }
 
 export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) => {

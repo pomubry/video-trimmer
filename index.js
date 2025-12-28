@@ -92,14 +92,12 @@ var videoCounter = (counter) => {
   return number;
 };
 var generateFFmpegScripts = ({ input, tsArray, dir }, { FPS, HEVC }) => {
-  let counter = 0;
-  let ffmpegScripts = [];
   const basename = import_node_path.default.parse(input).name;
-  tsArray.forEach((ts) => {
-    counter++;
-    let number = videoCounter(counter);
+  return tsArray.reduce((acc, ts, idx) => {
+    let counter = idx + 1;
+    const number = videoCounter(counter);
     const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-    if (dir.includes(outputFilename)) return;
+    if (dir.includes(outputFilename)) return acc;
     const cmd = [
       "ffmpeg -v warning -stats",
       `-ss ${ts[0]}`,
@@ -109,9 +107,8 @@ var generateFFmpegScripts = ({ input, tsArray, dir }, { FPS, HEVC }) => {
       `${FPS === 0 ? "" : `-r ${FPS}`}`,
       `"${import_node_path.default.join(basename, outputFilename)}"`
     ];
-    ffmpegScripts.push(cmd.filter(Boolean).join(" "));
-  });
-  return ffmpegScripts;
+    return [...acc, cmd.filter(Boolean).join(" ")];
+  }, []);
 };
 var getVideoSegmentRegExp = (nameOnly, extensionName) => {
   const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
@@ -133,70 +130,6 @@ Only the following extensions are valid:
     ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
     );
   }
-};
-
-// src/utils/timestamp.ts
-var isDuplicateTimestamp = (prevTimestamp, timestamp1, idx) => {
-  const prevTimestamp2 = prevTimestamp.split(/\s/)[1];
-  if (prevTimestamp2 === void 0) {
-    console.error(`
-The 2nd timestamp from line ${idx} might be undefined.`);
-    return true;
-  }
-  if (timestamp1 === prevTimestamp2) {
-    console.error(
-      `
-Duplicate timestamp found at line ${idx} and line ${idx + 1}:
-    --- Two instances of timestamp [${timestamp1}] were found.`
-    );
-    return true;
-  }
-  return false;
-};
-var processTimestamps = (timestampArr) => {
-  let tsError = false;
-  let totalTime = 0;
-  let videoSegmentDurations = [];
-  let arr = timestampArr.reduce((acc, timestamp, idx) => {
-    if (idx === 0) return [...acc, timestamp];
-    if (timestamp === "" && idx === timestampArr.length - 1) return acc;
-    if (timestampRegex.test(timestamp)) {
-      let timestamps = timestamp.split(/\s/g);
-      let timestamp1 = sexagesimalToSeconds(timestamps[0]);
-      let timestamp2 = sexagesimalToSeconds(timestamps[1]);
-      if (timestamp2 <= timestamp1) {
-        tsError = true;
-        console.error(
-          `
-Timestamp duration error at line ${idx + 1}:
-    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
-        );
-        return acc;
-      }
-      const prevTimestamp = timestampArr[idx - 1] || "";
-      if (!timestampRegex.test(prevTimestamp) && idx > 1) {
-        tsError = true;
-        return acc;
-      }
-      const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx);
-      if (res) {
-        tsError = true;
-        return acc;
-      }
-      totalTime += timestamp2 - timestamp1;
-      videoSegmentDurations.push(timestamp2 - timestamp1);
-      return [...acc, timestamp];
-    } else {
-      tsError = true;
-      console.error(`
-Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
-      return acc;
-    }
-  }, []);
-  if (tsError) throw new Error(
-    errorMsgFormatter("Timestamps errors were found.")
-  );
-  return { arr, totalTime, videoSegmentDurations };
 };
 
 // src/repositories/filesystem.ts
@@ -288,6 +221,76 @@ Creating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`);
 Video trimmer has finished. Video output should be about ${sexagesimal} long. 
 Total processing time: ${sexagesimalFormat(timeDiff / 1e3)}`
   );
+};
+
+// src/utils/timestamp.ts
+var isDuplicateTimestamp = (prevTimestamp, timestamp1, idx) => {
+  const prevTimestamp2 = prevTimestamp.split(/\s/)[1];
+  if (prevTimestamp2 === void 0 && idx > 1) {
+    return {
+      isDuplicate: true,
+      message: `
+The 2nd timestamp from line ${idx} might be undefined.`
+    };
+  }
+  if (timestamp1 === prevTimestamp2) {
+    return {
+      isDuplicate: true,
+      message: `
+Duplicate timestamp found at line ${idx} and line ${idx + 1}:
+    --- Two instances of timestamp [${timestamp1}] were found.`
+    };
+  }
+  return {
+    isDuplicate: false,
+    message: ``
+  };
+};
+var processTimestamps = (timestampArr) => {
+  let tsError = false;
+  let totalTime = 0;
+  let videoSegmentDurations = [];
+  let arr = timestampArr.reduce((acc, timestamp, idx) => {
+    if (idx === 0) return [...acc, timestamp];
+    if (timestamp === "" && idx === timestampArr.length - 1) return acc;
+    if (timestampRegex.test(timestamp)) {
+      let timestamps = timestamp.split(/\s/g);
+      let timestamp1 = sexagesimalToSeconds(timestamps[0]);
+      let timestamp2 = sexagesimalToSeconds(timestamps[1]);
+      if (timestamp2 <= timestamp1) {
+        tsError = true;
+        console.error(
+          `
+Timestamp duration error at line ${idx + 1}:
+    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
+        );
+        return acc;
+      }
+      const prevTimestamp = timestampArr[idx - 1] || "";
+      if (!timestampRegex.test(prevTimestamp) && idx > 1) {
+        tsError = true;
+        return acc;
+      }
+      const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx);
+      if (res.isDuplicate) {
+        tsError = true;
+        console.error(res.message);
+        return acc;
+      }
+      totalTime += timestamp2 - timestamp1;
+      videoSegmentDurations.push(timestamp2 - timestamp1);
+      return [...acc, timestamp];
+    } else {
+      tsError = true;
+      console.error(`
+Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
+      return acc;
+    }
+  }, []);
+  if (tsError) throw new Error(
+    errorMsgFormatter("Timestamps errors were found.")
+  );
+  return { arr, totalTime, videoSegmentDurations };
 };
 
 // src/index.ts

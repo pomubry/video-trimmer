@@ -1,4 +1,6 @@
 import {errorMsgFormatter, sexagesimalToSeconds, timestampRegex} from "./formatter.js";
+import * as filesystem from "../repositories/filesystem.js";
+import * as validator from "./validator.js";
 
 /*
 Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
@@ -11,22 +13,31 @@ const isDuplicateTimestamp = (
     prevTimestamp: string,
     timestamp1: string,
     idx: number
-) => {
+): {
+    isDuplicate: boolean,
+    message: string,
+} => {
     const prevTimestamp2 = prevTimestamp.split(/\s/)[1]
-    if (prevTimestamp2 === undefined) {
-        console.error(`\nThe 2nd timestamp from line ${idx} might be undefined.`);
-        return true
+    if (prevTimestamp2 === undefined && idx > 1) {
+        return {
+            isDuplicate: true,
+            message: `\nThe 2nd timestamp from line ${idx} might be undefined.`
+        }
     }
 
     if (timestamp1 === prevTimestamp2) {
-        console.error(`
+        return {
+            isDuplicate: true,
+            message: `
 Duplicate timestamp found at line ${idx} and line ${idx + 1}:
     --- Two instances of timestamp [${timestamp1}] were found.`
-        );
-        return true
+        }
     }
 
-    return false
+    return {
+        isDuplicate: false,
+        message: ``
+    }
 }
 
 /*
@@ -71,8 +82,9 @@ Timestamp duration error at line ${idx + 1}:
             }
 
             const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx)
-            if (res) {
+            if (res.isDuplicate) {
                 tsError = true;
+                console.error(res.message)
                 return acc
             }
 
