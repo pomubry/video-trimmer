@@ -12,19 +12,9 @@ import {
 
 import type {MergeOptions} from "../types/index.js";
 
-const hoistedArgs = vi.hoisted(() => ({
-    outputFilename: ""
-}))
-
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
-vi.mock(import("../services/childProcess.js"), async (importOriginal) => {
-    const original = await importOriginal()
-    return {
-        ...original,
-        mergeVideoSegments: () => fs.writeFileSync(hoistedArgs.outputFilename, "random text")
-    }
-})
+vi.mock(import("../services/childProcess.js"))
 
 beforeEach(() => {
     vol.reset()
@@ -88,7 +78,6 @@ describe("Merge video function", () => {
         totalTime: 10
     }
     const otherFile = "other-file.txt"
-    hoistedArgs.outputFilename = outputFilenameFormatter(baseName);
 
     beforeEach(() => {
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
