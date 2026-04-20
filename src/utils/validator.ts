@@ -16,3 +16,12 @@ Only the following extensions are valid:
     }
 }
 
+export const isValidVideoFilename = (videoFilename: string) => {
+    const res = !/[(|)]/.test(videoFilename)
+
+    if (!res) {
+        throw new Error(
+            errorMsgFormatter("The video filename should not contain any parentheses.")
+        )
+    }
+};
