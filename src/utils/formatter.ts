@@ -44,12 +44,12 @@ export const videoCounter = (counter: number) => {
 }
 
 export const generateFFmpegScripts = (
-    {input, tsArray, dir,}: FFmpegArguments,
+    {input, timestampPairs, dir,}: FFmpegArguments,
     {FPS, HEVC}: FFmpegConfig
 ) => {
     const basename = path.parse(input).name
 
-    return tsArray.reduce((acc, ts, idx) => {
+    return timestampPairs.reduce((acc, ts, idx) => {
         let counter = idx + 1;
         const number = videoCounter(counter)
 

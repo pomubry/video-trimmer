@@ -105,7 +105,7 @@ describe("Generated FFmpeg Scripts", () => {
     test("Should be valid with valid input", () => {
         const obj: FFmpegArguments = {
             input,
-            tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
+            timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
             dir: []
         }
 
@@ -121,7 +121,7 @@ describe("Generated FFmpeg Scripts", () => {
     test("Skip segments that are already created", () => {
         const obj: FFmpegArguments = {
             input,
-            tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
+            timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
             dir: [`${basename}_002.${FILENAME_OPTIONS.EXTENSION_NAME}`]
         }
 
@@ -136,7 +136,7 @@ describe("Generated FFmpeg Scripts", () => {
     test("Should apply hevc encoding if set in config", () => {
         const obj: FFmpegArguments = {
             input,
-            tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
+            timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
             dir: []
         }
 
@@ -153,7 +153,7 @@ describe("Generated FFmpeg Scripts", () => {
     test("Should apply framerate set in config", () => {
         const obj: FFmpegArguments = {
             input,
-            tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
+            timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
             dir: []
         }
 
@@ -170,7 +170,7 @@ describe("Generated FFmpeg Scripts", () => {
     test("Should apply the extension set in config", () => {
         const obj: FFmpegArguments = {
             input,
-            tsArray: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
+            timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
             dir: []
         }
 

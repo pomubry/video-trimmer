@@ -1,12 +1,31 @@
 import {afterEach, describe, expect, test, vi} from "vitest";
-import {getTimestampPairs, processTimestamps} from "./timestamp.js";
+import {processTimestamps} from "./timestamp.js";
 
 afterEach(() => {
     vi.restoreAllMocks()
 })
 
-describe("Process timestamp", () => {
-    test("Should return a valid timestamp array with valid input", () => {
+describe("processTimestamps", () => {
+    test("Should return an array without video filename", () => {
+        const input = [
+            "input.mp4",
+            "00:00:00.000 00:01:00.000",
+            "00:02:00.000 00:04:00.000",
+            "00:05:00.000 00:08:00.000"
+        ]
+
+        const output = [
+            ["00:00:00.000", "00:01:00.000"],
+            ["00:02:00.000", "00:04:00.000"],
+            ["00:05:00.000", "00:08:00.000"]
+        ]
+
+        const res = processTimestamps(input);
+
+        expect(res.timestampPairs).toEqual(expect.arrayContaining(output));
+    })
+
+    test("Should return the total video runtime in seconds", () => {
         const input = [
             "input.mp4",
             "00:00:00.000 00:01:00.000",
@@ -16,9 +35,33 @@ describe("Process timestamp", () => {
 
         const res = processTimestamps(input);
 
-        expect(res.arr).toEqual(input);
-        expect(res.totalTime).toBe(60 + 120 + 180)
+        expect(res.totalTime).toBe(60 + 120 + 180);
+    })
+
+    test("Should return the duration of each video segments", () => {
+        const input = [
+            "input.mp4",
+            "00:00:00.000 00:01:00.000",
+            "00:02:00.000 00:04:00.000",
+            "00:05:00.000 00:08:00.000"
+        ]
+
+        const res = processTimestamps(input);
+
         expect(res.videoSegmentDurations).toEqual([60, 120, 180])
+    })
+
+    test("Should return the video filename", () => {
+        const input = [
+            "input.mp4",
+            "00:00:00.000 00:01:00.000",
+            "00:02:00.000 00:04:00.000",
+            "00:05:00.000 00:08:00.000"
+        ]
+
+        const res = processTimestamps(input);
+
+        expect(res.videoFilename).toEqual("input.mp4");
     })
 
     test("Should return an error for invalid timestamp format", () => {
@@ -36,7 +79,7 @@ describe("Process timestamp", () => {
 
     })
 
-    test("Should also log an error if the first timestamp is greater than the second", () => {
+    test("Should log an error if the first timestamp is greater than the second", () => {
         const input = [
             "input.mp4",
             "00:00:00.000 00:01:00.000",
@@ -52,7 +95,7 @@ describe("Process timestamp", () => {
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/Timestamp \[00:04:00.000] should be greater than \[00:05:00.000]/i))
     })
 
-    test("Should also log an error if the first timestamp is equal the second timestamp of the previous iteration", () => {
+    test("Should log an error if the first timestamp is equal the second timestamp of the previous iteration", () => {
         const input = [
             "input.mp4",
             "00:00:00.000 00:01:00.000",
@@ -65,16 +108,5 @@ describe("Process timestamp", () => {
         expect(() => processTimestamps(input)).toThrowError(/timestamps errors/i);
         expect(spy).toHaveBeenCalledOnce();
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/(?=.*duplicate)(?=.*line 3 and line 4)/i))
-    })
-})
-
-describe("getTimestampPairs", () => {
-    test("should return an array of timestamp pairs", () => {
-        const input = ["00:00.000 00:01.000", "00:02.000 00:03.000"]
-
-        const res = getTimestampPairs(input, 0);
-
-        expect(res[0]).toEqual(expect.arrayContaining(["00:00.000", "00:01.000"]))
-        expect(res[1]).toEqual(expect.arrayContaining(["00:02.000", "00:03.000"]))
     })
 })

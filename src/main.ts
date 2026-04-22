@@ -31,28 +31,15 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
 
     console.log("\nProcessing timestamps. . .")
     const result = timestamp.processTimestamps(timestampArr);
-    const {totalTime, videoSegmentDurations} = result;
-    let {arr} = result;
-
-    // Remove the name of the file from the array.
-    const videoFile = arr.shift();
-    if (videoFile === undefined) throw new Error(
-        formatter.errorMsgFormatter("Video filename was not found. The processed timestamp array is empty.")
-    )
+    const {timestampPairs, totalTime, videoSegmentDurations, videoFilename} = result;
 
     console.log("\nChecking video file. . .")
 
-    validator.checkFileExtension(videoFile);
-    validator.isValidVideoFilename(videoFile);
-    filesystem.checkVideoFile(videoFile);
+    validator.checkFileExtension(videoFilename);
+    validator.isValidVideoFilename(videoFilename);
+    filesystem.checkVideoFile(videoFilename);
 
-    /*
-    Split the strings inside the array by whitespaces.
-    The result would be in the form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
-    */
-    let tsSplit = timestamp.getTimestampPairs(arr, FFMPEG_OPTIONS.OFFSET);
-
-    const nameOnly = videoFile.slice(0, videoFile.lastIndexOf("."));
+    const nameOnly = videoFilename.slice(0, videoFilename.lastIndexOf("."));
     if (!fs.readdirSync(".").includes(nameOnly)) {
         fs.mkdirSync(nameOnly);
     }
@@ -60,8 +47,8 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
     let baseOutputPath = "./" + nameOnly;
     let videoSegments = fs.readdirSync(baseOutputPath);
     const ffmpegArgs: FFmpegArguments = {
-        input: videoFile,
-        tsArray: tsSplit,
+        input: videoFilename,
+        timestampPairs,
         dir: videoSegments
     }
     let ffmpegScripts: string[] = formatter.generateFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
@@ -82,7 +69,7 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
         .readdirSync(baseOutputPath)
         .filter((file) => videoSegmentRegExp.test(file));
 
-    // Check the duration of each video segments and if the computed duration is almost equal to the actual duration.
+    // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
     console.log("\nChecking each video segment's length. . .");
     let possibleErrors = videoSegments.reduce((acc, file, index) => {
         const durationInSeconds = childProcess.getVideoDuration(baseOutputPath, file);

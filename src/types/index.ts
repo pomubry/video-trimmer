@@ -10,7 +10,7 @@ export interface MergeOptions {
 
 export interface FFmpegArguments {
     input: string,
-    tsArray: string[][],
+    timestampPairs: string[][],
     dir: string[],
 }
 
