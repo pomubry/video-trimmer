@@ -2,7 +2,7 @@ import fs from "fs";
 
 import * as childProcess from "./services/childProcess.js";
 import * as filesystem from "./repositories/filesystem.js";
-import {processTimestamps} from "./utils/timestamp.js";
+import * as timestamp from "./utils/timestamp.js";
 import * as formatter from "./utils/formatter.js";
 import * as validator from "./utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
@@ -30,7 +30,7 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
     console.log("\nProcessing timestamps. . .")
-    const result = processTimestamps(timestampArr);
+    const result = timestamp.processTimestamps(timestampArr);
     const {totalTime, videoSegmentDurations} = result;
     let {arr} = result;
 
@@ -48,20 +48,9 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
 
     /*
     Split the strings inside the array by whitespaces.
-    The result would be in form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
+    The result would be in the form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
     */
-    let tsSplit = arr.map((ts) => {
-        let tsArr = ts.split(/\s/);
-
-        if (FFMPEG_OPTIONS.OFFSET !== 0) {
-            tsArr = tsArr.map((singleTs) => {
-                let tsInSeconds = formatter.sexagesimalToSeconds(singleTs);
-                return formatter.sexagesimalFormat(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
-            });
-        }
-
-        return tsArr;
-    });
+    let tsSplit = timestamp.getTimestampPairs(arr, FFMPEG_OPTIONS.OFFSET);
 
     const nameOnly = videoFile.slice(0, videoFile.lastIndexOf("."));
     if (!fs.readdirSync(".").includes(nameOnly)) {

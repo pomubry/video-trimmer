@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, test, vi} from "vitest";
-import {processTimestamps} from "./timestamp.js";
+import {getTimestampPairs, processTimestamps} from "./timestamp.js";
 
 afterEach(() => {
     vi.restoreAllMocks()
@@ -65,5 +65,16 @@ describe("Process timestamp", () => {
         expect(() => processTimestamps(input)).toThrowError(/timestamps errors/i);
         expect(spy).toHaveBeenCalledOnce();
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/(?=.*duplicate)(?=.*line 3 and line 4)/i))
+    })
+})
+
+describe("getTimestampPairs", () => {
+    test("should return an array of timestamp pairs", () => {
+        const input = ["00:00.000 00:01.000", "00:02.000 00:03.000"]
+
+        const res = getTimestampPairs(input, 0);
+
+        expect(res[0]).toEqual(expect.arrayContaining(["00:00.000", "00:01.000"]))
+        expect(res[1]).toEqual(expect.arrayContaining(["00:02.000", "00:03.000"]))
     })
 })

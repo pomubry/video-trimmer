@@ -1,6 +1,6 @@
 import {errorMsgFormatter, sexagesimalToSeconds, timestampRegex} from "./formatter.js";
-import * as filesystem from "../repositories/filesystem.js";
-import * as validator from "./validator.js";
+import {FFMPEG_OPTIONS} from "../config.js";
+import * as formatter from "./formatter.js";
 
 /*
 Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
@@ -105,3 +105,16 @@ Timestamp duration error at line ${idx + 1}:
 
     return {arr, totalTime, videoSegmentDurations};
 }
+
+export const getTimestampPairs = (arr: string[], offset: number) => arr.map((ts) => {
+    let tsArr = ts.split(/\s/);
+
+    if (offset !== 0) {
+        tsArr = tsArr.map((singleTs) => {
+            let tsInSeconds = formatter.sexagesimalToSeconds(singleTs);
+            return formatter.sexagesimalFormat(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
+        });
+    }
+
+    return tsArr;
+});
