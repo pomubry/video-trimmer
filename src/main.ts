@@ -73,35 +73,7 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
 
     // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
     console.log("\nChecking each video segment's length. . .");
-    let possibleErrors = videoSegments.reduce((acc, file, index) => {
-        const durationInSeconds = childProcess.getVideoDuration(baseName, file);
-
-        if (videoSegmentDurations[index] === undefined) {
-            throw new Error(
-                formatter.errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
-            )
-        }
-
-        let difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
-        let isGreaterThanOne = Number(difference) > 1;
-
-        console.log(`\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${(
-                videoSegmentDurations[index]
-            )}) vs Actual (${(
-                durationInSeconds
-            )}). Difference: ${difference} seconds.${
-                isGreaterThanOne
-                    ? "\x1b[31m Possible Error!\x1b[0m"
-                    : "\x1b[32m Result Okay!\x1b[0m"
-            }`
-        );
-
-        if (isGreaterThanOne) {
-            return [...acc, file]
-        }
-
-        return acc
-    }, [] as string[]);
+    const possibleErrors = validator.checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
     const mergeVideosArgs: MergeOptions = {
         videoSegments,

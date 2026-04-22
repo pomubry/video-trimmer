@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import {getVideoDuration} from "../services/childProcess.js";
 import {errorMsgFormatter} from "./formatter.js";
 import {FILENAME_OPTIONS} from "../config.js";
 
@@ -25,3 +26,34 @@ export const checkVideoFilename = (videoFilename: string) => {
         )
     }
 };
+
+export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDurations: number[], baseName: string) =>
+    videoSegments.reduce((acc, file, index) => {
+        const durationInSeconds = getVideoDuration(baseName, file);
+
+        if (videoSegmentDurations[index] === undefined) {
+            throw new Error(
+                errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
+            )
+        }
+
+        const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
+        const isGreaterThanOne = Number(difference) > 1;
+
+        console.log(`\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${(
+                videoSegmentDurations[index]
+            )}) vs Actual (${(
+                durationInSeconds
+            )}). Difference: ${difference} seconds.${
+                isGreaterThanOne
+                    ? "\x1b[31m Possible Error!\x1b[0m"
+                    : "\x1b[32m Result Okay!\x1b[0m"
+            }`
+        );
+
+        if (isGreaterThanOne) {
+            return [...acc, file]
+        }
+
+        return acc
+    }, [] as string[]);
