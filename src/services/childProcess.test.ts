@@ -1,6 +1,6 @@
 import path from "node:path";
-import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
-import {fs, vol} from "memfs";
+import {afterEach, describe, expect, test, vi} from "vitest";
+import {fs} from "memfs";
 
 import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {createVideoSegment, mergeVideoSegments, getVideoDuration} from "./childProcess.js";
@@ -8,11 +8,6 @@ import {createVideoSegment, mergeVideoSegments, getVideoDuration} from "./childP
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
 vi.mock(import("./childProcess.js"))
-
-beforeEach(() => {
-    vol.reset()
-    vol.mkdirSync(process.cwd(), {recursive: true})
-})
 
 afterEach(() => {
     vi.restoreAllMocks();

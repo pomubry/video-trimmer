@@ -1,6 +1,6 @@
 import path from "node:path";
 import {vi, describe, test, beforeEach, afterEach, expect} from 'vitest'
-import {fs, vol} from "memfs";
+import {fs} from "memfs";
 
 import {FILENAME_OPTIONS} from "../config.js";
 import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
@@ -15,11 +15,6 @@ import type {MergeOptions} from "../types/index.js";
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
 vi.mock(import("../services/childProcess.js"))
-
-beforeEach(() => {
-    vol.reset()
-    vol.mkdirSync(process.cwd(), {recursive: true})
-})
 
 afterEach(() => {
     vi.restoreAllMocks()
