@@ -86,17 +86,17 @@ Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
 
     fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
 
-    const {totalTime, timeDiff, ...rest} = mergeOptions
+    const {videoDuration, elapsedTime, ...rest} = mergeOptions
 
     removeVideoSegments(rest)
     createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, basename);
 
     console.log(`\nCreating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`)
 
-    let sexagesimal = sexagesimalFormat(totalTime);
+    let sexagesimal = sexagesimalFormat(videoDuration);
 
     console.log(`
 Video trimmer has finished. Video output should be about ${sexagesimal} long. 
-Total processing time: ${sexagesimalFormat(timeDiff / 1000)}`
+Total processing time: ${sexagesimalFormat(elapsedTime / 1000)}`
     );
 };

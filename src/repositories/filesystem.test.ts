@@ -74,8 +74,8 @@ describe("Merge video function", () => {
         videoSegments,
         basename: baseName,
         isVideoSegmentKept: "yes",
-        timeDiff: 0,
-        totalTime: 10
+        elapsedTime: 0,
+        videoDuration: 10
     }
     const otherFile = "other-file.txt"
 
@@ -101,8 +101,8 @@ describe("Merge video function", () => {
         mergeVideos(args);
         const files = fs.readdirSync(".")
         const copiedData = fs.readFileSync(baseName + ".txt", "utf-8")
-        const totalTimeLogged = sexagesimalFormat(args.totalTime);
-        const processingTime = sexagesimalFormat(args.timeDiff / 1000);
+        const totalTimeLogged = sexagesimalFormat(args.videoDuration);
+        const processingTime = sexagesimalFormat(args.elapsedTime / 1000);
 
         expectedFiles.forEach(file => {
             expect(files).toContain(file)
