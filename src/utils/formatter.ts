@@ -43,8 +43,8 @@ export const videoCounter = (counter: number) => {
     return number
 }
 
-export const generateFFmpegScripts = (
-    {input, timestampPairs, dir,}: FFmpegArguments,
+export const createFFmpegScripts = (
+    {input, timestampPairs, videoSegments,}: FFmpegArguments,
     {FPS, HEVC}: FFmpegConfig
 ) => {
     const basename = path.parse(input).name
@@ -55,7 +55,7 @@ export const generateFFmpegScripts = (
 
         // Check first if the fileName already exists. If it does, skip.
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        if (dir.includes(outputFilename)) return acc;
+        if (videoSegments.includes(outputFilename)) return acc;
 
         const cmd = [
             "ffmpeg -v warning -stats",

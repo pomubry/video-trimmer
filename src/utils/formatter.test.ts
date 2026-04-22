@@ -1,14 +1,14 @@
 import path from "node:path"
 import {vi, describe, test, beforeEach, expect} from "vitest";
 
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {
-    generateFFmpegScripts,
+    createFFmpegScripts,
     getVideoSegmentRegExp,
     sexagesimalToSeconds,
     timestampRegex,
     videoCounter
 } from "./formatter.js";
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments} from "../types/index.js";
 
@@ -106,7 +106,7 @@ describe("Generated FFmpeg Scripts", () => {
         const obj: FFmpegArguments = {
             input,
             timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: []
+            videoSegments: []
         }
 
         const ffmpegScripts = [
@@ -115,14 +115,14 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Skip segments that are already created", () => {
         const obj: FFmpegArguments = {
             input,
             timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: [`${basename}_002.${FILENAME_OPTIONS.EXTENSION_NAME}`]
+            videoSegments: [`${basename}_002.${FILENAME_OPTIONS.EXTENSION_NAME}`]
         }
 
         const ffmpegScripts = [
@@ -130,14 +130,14 @@ describe("Generated FFmpeg Scripts", () => {
             `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
-        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply hevc encoding if set in config", () => {
         const obj: FFmpegArguments = {
             input,
             timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: []
+            videoSegments: []
         }
 
         const ffmpegScripts = [
@@ -147,14 +147,14 @@ describe("Generated FFmpeg Scripts", () => {
         ]
 
         vi.spyOn(FFMPEG_OPTIONS, "HEVC", "get").mockReturnValueOnce(true);
-        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply framerate set in config", () => {
         const obj: FFmpegArguments = {
             input,
             timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: []
+            videoSegments: []
         }
 
         const ffmpegScripts = [
@@ -164,14 +164,14 @@ describe("Generated FFmpeg Scripts", () => {
         ]
 
         vi.spyOn(FFMPEG_OPTIONS, "FPS", "get").mockReturnValueOnce(60);
-        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply the extension set in config", () => {
         const obj: FFmpegArguments = {
             input,
             timestampPairs: [["00:00:00.000", "00:01:00.000"], ["00:02:00.000", "00:03:00.000"], ["00:04:00.000", "00:05:00.000"]],
-            dir: []
+            videoSegments: []
         }
 
         const ffmpegScripts = [
@@ -181,7 +181,7 @@ describe("Generated FFmpeg Scripts", () => {
         ]
 
         vi.spyOn(FILENAME_OPTIONS, "EXTENSION_NAME", "get").mockReturnValue("mkv");
-        expect(generateFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
 
         vi.restoreAllMocks()
         expect(FILENAME_OPTIONS.EXTENSION_NAME).toBe("mp4")

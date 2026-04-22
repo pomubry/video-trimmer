@@ -11,7 +11,7 @@ export interface MergeOptions {
 export interface FFmpegArguments {
     input: string,
     timestampPairs: string[][],
-    dir: string[],
+    videoSegments: string[],
 }
 
 export type FFmpegConfig = typeof FFMPEG_OPTIONS

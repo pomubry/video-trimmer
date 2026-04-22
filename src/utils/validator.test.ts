@@ -1,5 +1,5 @@
 import {describe, expect, test} from "vitest";
-import {checkFileExtension, isValidVideoFilename} from "./validator.js";
+import {checkFileExtension, checkVideoFilename} from "./validator.js";
 
 describe("Validation", () => {
     test("Should throw with invalid input", () => {
@@ -11,7 +11,7 @@ describe("Validation", () => {
     })
 
     test("Should throw with invalid input video characters", () => {
-        expect(() => isValidVideoFilename("input(shouldHaveNoParenthesis).mp4")).toThrow();
-        expect(() => isValidVideoFilename("inputShouldHaveNoParenthesis.mp4")).not.toThrow();
+        expect(() => checkVideoFilename("input(shouldHaveNoParenthesis).mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNoParenthesis.mp4")).not.toThrow();
     })
 })

@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "node:path";
 
 import * as childProcess from "./services/childProcess.js";
 import * as filesystem from "./repositories/filesystem.js";
@@ -26,36 +27,37 @@ const readlineMergeCallback: ReadlineMergeCallback = (answer, mergeOptions, read
 }
 
 export const main = (answer: string, readlineInterface: ReadlineCloseCallback) => {
-    let ts = filesystem.readTimestamps();
+    const ts = filesystem.readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
     console.log("\nProcessing timestamps. . .")
-    const result = timestamp.processTimestamps(timestampArr);
-    const {timestampPairs, totalTime, videoSegmentDurations, videoFilename} = result;
+    const {
+        timestampPairs,
+        totalTime,
+        videoSegmentDurations,
+        videoFilename
+    } = timestamp.processTimestamps(timestampArr);
 
     console.log("\nChecking video file. . .")
 
     validator.checkFileExtension(videoFilename);
-    validator.isValidVideoFilename(videoFilename);
+    validator.checkVideoFilename(videoFilename);
     filesystem.checkVideoFile(videoFilename);
 
-    const nameOnly = videoFilename.slice(0, videoFilename.lastIndexOf("."));
-    if (!fs.readdirSync(".").includes(nameOnly)) {
-        fs.mkdirSync(nameOnly);
-    }
+    const baseName = path.parse(videoFilename).name;
+    fs.mkdirSync(baseName, {recursive: true});
 
-    let baseOutputPath = "./" + nameOnly;
-    let videoSegments = fs.readdirSync(baseOutputPath);
+    let videoSegments = fs.readdirSync(baseName);
     const ffmpegArgs: FFmpegArguments = {
         input: videoFilename,
         timestampPairs,
-        dir: videoSegments
+        videoSegments
     }
-    let ffmpegScripts: string[] = formatter.generateFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
+    const ffmpegScripts: string[] = formatter.createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
 
     console.log("\nExecuting FFmpeg. This may take a while. . .");
 
-    let time1 = Date.now();
+    const time1 = Date.now();
     ffmpegScripts.forEach((script) => {
         console.log("\n" + script);
         childProcess.createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
@@ -64,15 +66,15 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
 
     // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
     // where XYZ is the number of the video, i.e., fileName_001.mp4.
-    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(nameOnly, FILENAME_OPTIONS.EXTENSION_NAME);
+    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
     videoSegments = fs
-        .readdirSync(baseOutputPath)
+        .readdirSync(baseName)
         .filter((file) => videoSegmentRegExp.test(file));
 
     // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
     console.log("\nChecking each video segment's length. . .");
     let possibleErrors = videoSegments.reduce((acc, file, index) => {
-        const durationInSeconds = childProcess.getVideoDuration(baseOutputPath, file);
+        const durationInSeconds = childProcess.getVideoDuration(baseName, file);
 
         if (videoSegmentDurations[index] === undefined) {
             throw new Error(
@@ -103,7 +105,7 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
 
     const mergeVideosArgs: MergeOptions = {
         videoSegments,
-        basename: nameOnly,
+        basename: baseName,
         isVideoSegmentKept: answer,
         videoDuration: totalTime,
         elapsedTime,

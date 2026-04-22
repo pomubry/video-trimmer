@@ -1,11 +1,11 @@
 import fs from "node:fs";
+import path from "node:path";
 
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {mergeVideoSegments} from "../services/childProcess.js";
 import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
-import path from "node:path";
 
 export const readTimestamps = () => {
     let ts = "";

@@ -1,7 +1,7 @@
 import path from "node:path";
 
-import {FILENAME_OPTIONS} from "../config.js";
 import {errorMsgFormatter} from "./formatter.js";
+import {FILENAME_OPTIONS} from "../config.js";
 
 export const checkFileExtension = (videoFile: string) => {
     const extensionName = path.extname(videoFile).toLowerCase().slice(1);
@@ -16,7 +16,7 @@ Only the following extensions are valid:
     }
 }
 
-export const isValidVideoFilename = (videoFilename: string) => {
+export const checkVideoFilename = (videoFilename: string) => {
     const res = !/[(|)]/.test(videoFilename)
 
     if (!res) {
