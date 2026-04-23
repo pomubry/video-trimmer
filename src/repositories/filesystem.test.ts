@@ -1,24 +1,12 @@
 import path from "node:path";
-import {vi, describe, test, beforeEach, afterEach, expect} from 'vitest'
+import {vi, describe, test, beforeEach, expect} from 'vitest'
 import {fs} from "memfs";
 
-import {FILENAME_OPTIONS} from "../config.js";
 import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
-import {
-    checkVideoFile,
-    mergeVideos,
-    readTimestamps
-} from "./filesystem.js";
+import {checkVideoFile, mergeVideos, readTimestamps} from "./filesystem.js";
+import {FILENAME_OPTIONS} from "../config.js";
 
 import type {MergeOptions} from "../types/index.js";
-
-vi.mock('node:fs')
-vi.mock('node:fs/promises')
-vi.mock(import("../services/childProcess.js"))
-
-afterEach(() => {
-    vi.restoreAllMocks()
-})
 
 const baseName = "segment"
 const videoSegments = new Array(3)

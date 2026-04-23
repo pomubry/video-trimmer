@@ -1,17 +1,9 @@
 import path from "node:path";
-import {afterEach, describe, expect, test, vi} from "vitest";
+import {describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 import {createVideoSegment, mergeVideoSegments, getVideoDuration} from "./childProcess.js";
-
-vi.mock('node:fs')
-vi.mock('node:fs/promises')
-vi.mock(import("./childProcess.js"))
-
-afterEach(() => {
-    vi.restoreAllMocks();
-})
+import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 describe("createVideoSegment", () => {
     const baseName = "segment"

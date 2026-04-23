@@ -1,13 +1,7 @@
-import {afterEach, describe, expect, test, vi} from "vitest";
+import {describe, expect, test, vi} from "vitest";
 
 import {checkFileExtension, checkVideoDurationErrors, checkVideoFilename} from "./validator.js";
 import {getVideoDuration} from "../services/childProcess.js";
-
-vi.mock(import("../services/childProcess.js"))
-
-afterEach(() => {
-    vi.restoreAllMocks()
-})
 
 describe("checkFileExtension", () => {
     test("Should throw with invalid input", () => {
