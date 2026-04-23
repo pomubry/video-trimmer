@@ -1,12 +1,13 @@
 import {vi} from "vitest";
 import {fs} from "memfs";
-import {type ExecSyncOptions} from "node:child_process";
 
 import {FILENAME_OPTIONS} from "../../config.js";
 
+import {type ExecSyncOptions} from "node:child_process";
+
 export const createVideoSegment = (script: string, _execSyncOptions: ExecSyncOptions) => {
-    const filenameRegex = new RegExp(`".+${FILENAME_OPTIONS.EXTENSION_NAME}"$`, "i");
-    const filename = script.match(filenameRegex)![0];
+    const filenameRegex = new RegExp(`"([^"]+\.${FILENAME_OPTIONS.EXTENSION_NAME})"`, "ig");
+    const filename = script.match(filenameRegex)![1]!;
     fs.writeFileSync(filename.slice(1, -1), "something")
 };
 

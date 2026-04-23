@@ -13,7 +13,7 @@ describe("createVideoSegment", () => {
         const fullPath = path.join(baseName, filename)
         fs.mkdirSync(baseName)
 
-        createVideoSegment(`ffmpeg -c:v otherOptions "${fullPath}"`, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+        createVideoSegment(`ffmpeg -i "${baseName}.mp4" -c:v otherOptions "${fullPath}"`, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
         const dir = fs.readdirSync(".");
         const dirItems = fs.readdirSync(baseName);
