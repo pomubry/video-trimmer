@@ -7,26 +7,11 @@ import * as timestamp from "./utils/timestamp.js";
 import * as formatter from "./utils/formatter.js";
 import * as validator from "./utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
-import {readlineMerge, readlineQA} from "./services/readline.js";
 
-import type {
-    FFmpegArguments,
-    MergeOptions,
-    ReadlineCloseCallback,
-    ReadlineMergeCallback,
-} from "./types/index.js";
+import type {Interface} from "node:readline";
+import type {FFmpegArguments, MergeOptions} from "./types/index.js";
 
-const readlineMergeCallback: ReadlineMergeCallback = (answer, mergeOptions, readlineInterface) => {
-    if (answer.toLocaleLowerCase() === "yes") {
-        console.log("\nAbort merging of video segments. . .");
-        return readlineInterface.close();
-    } else {
-        filesystem.mergeVideos(mergeOptions);
-        return readlineInterface.close();
-    }
-}
-
-export const main = (answer: string, readlineInterface: ReadlineCloseCallback) => {
+export const main = (answer: string, readlineInterface: Pick<Interface, "close">) => {
     const ts = filesystem.readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
@@ -75,6 +60,17 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
     console.log("\nChecking each video segment's length. . .");
     const possibleErrors = validator.checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
+    if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
+        console.error(formatter.listPossibleErrors(possibleErrors));
+
+        if (!APP_OPTIONS.IGNORE_ERRORS) {
+            console.log("\nAbort merging of video segments. . .");
+            return readlineInterface.close();
+        }
+    } else {
+        console.log("\nNo problems were found with the video segments.");
+    }
+
     const mergeVideosArgs: MergeOptions = {
         videoSegments,
         basename: baseName,
@@ -83,23 +79,6 @@ export const main = (answer: string, readlineInterface: ReadlineCloseCallback) =
         elapsedTime,
     }
 
-    if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
-        console.error(`
-Please check the following files for possible errors:
-
-${possibleErrors.map(err => "\t" + err).join("\n")}
-
-Note that small disparities are normal and you may continue if you have not found an error in any video segments.`
-        )
-
-        readlineMerge(
-            readlineQA,
-            mergeVideosArgs,
-            readlineMergeCallback
-        )
-    } else {
-        console.log("\nNo problems were found with the video segments.");
-        filesystem.mergeVideos(mergeVideosArgs);
-        return readlineInterface.close();
-    }
+    filesystem.mergeVideos(mergeVideosArgs);
+    return readlineInterface.close();
 };

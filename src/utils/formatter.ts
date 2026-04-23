@@ -80,3 +80,10 @@ export const outputFilenameFormatter = (basename: string) => `${basename} (Resul
 
 export const errorMsgFormatter = (message: string) => `\n${message}\n`
 
+export const listPossibleErrors = (possibleErrors: string[]) =>
+    `
+Please check the following files for possible errors:
+
+${possibleErrors.map(err => "\t" + err).join("\n")}
+
+Note that small disparities are normal and you may continue if you have not found an error in any video segments.`

@@ -25,6 +25,7 @@ export const FILENAME_OPTIONS = {
 
 export const APP_OPTIONS = {
     IS_BATCH: false,
+    IGNORE_ERRORS: true,
     BATCH_SEPARATOR: "@batch@",
     BATCH_INPUT: "batch.txt"
 }
