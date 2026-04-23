@@ -6,7 +6,7 @@ import {createVideoSegment, mergeVideoSegments, getVideoDuration} from "./childP
 import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 describe("createVideoSegment", () => {
-    const baseName = "segment"
+    let baseName = "segment"
 
     test("should create a file", () => {
         const filename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
@@ -19,6 +19,21 @@ describe("createVideoSegment", () => {
         const dirItems = fs.readdirSync(baseName);
         expect(dir).toContain(baseName)
         expect(dirItems).toContain(filename)
+    })
+
+    test("should accept japanese characters in input file", () => {
+        baseName = "あえいおうアエイオウ東京";
+        const jpFilename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
+        const fullPath = path.join(baseName, jpFilename)
+        fs.mkdirSync(baseName)
+
+        createVideoSegment(`ffmpeg -i "${baseName}.mp4" -c:v otherOptions "${fullPath}"`, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+
+        const dir = fs.readdirSync(".");
+        const dirItems = fs.readdirSync(baseName);
+        expect(dir).toContain(baseName)
+        expect(dirItems).toContain(jpFilename)
+        baseName = "segment";
     })
 })
 
