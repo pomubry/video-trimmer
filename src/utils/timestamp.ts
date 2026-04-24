@@ -1,5 +1,10 @@
-import {FFMPEG_OPTIONS} from "../config.js";
 import * as formatter from "./formatter.js";
+import {FFMPEG_OPTIONS} from "../config.js";
+
+// Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
+export const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
+
+export const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 
 /*
 Split the strings inside the array by whitespaces.
@@ -70,7 +75,7 @@ export const processTimestamps = (timestampArr: string[]) => {
 
         if (timestamp === "" && idx === timestampArr.length - 1) return acc;
 
-        if (formatter.timestampRegex.test(timestamp)) {
+        if (timestampRegex.test(timestamp)) {
             let timestamps = timestamp.split(/\s/g) as [string, string];
 
             // Convert the time string format into seconds.
@@ -88,7 +93,7 @@ Timestamp duration error at line ${idx + 1}:
             }
 
             const prevTimestamp = timestampArr[idx - 1] || "";
-            if (!formatter.timestampRegex.test(prevTimestamp) && idx > 1) {
+            if (!timestampRegex.test(prevTimestamp) && idx > 1) {
                 tsError = true;
                 return acc
             }

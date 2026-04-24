@@ -1,12 +1,9 @@
 import path from "node:path";
 
+import {timestampPattern} from "./timestamp.js";
 import {FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
-
-// Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
-export const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 
 export const sexagesimalFormat = (durationInSeconds: number) => {
     let hour = Math.floor(durationInSeconds / 3600);

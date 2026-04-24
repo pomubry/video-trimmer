@@ -5,9 +5,9 @@ import {
     createFFmpegScripts,
     getVideoSegmentRegExp,
     sexagesimalToSeconds,
-    timestampRegex,
     videoCounter
 } from "./formatter.js";
+import {timestampRegex} from "./timestamp.js";
 import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments} from "../types/index.js";
