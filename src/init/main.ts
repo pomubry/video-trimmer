@@ -48,7 +48,7 @@ export const main = (args: MainArgs) => {
     console.log("\nChecking each video segment's length. . .");
     const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
-    if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
+    if (possibleErrors.length > 0) {
         console.error(formatter.listPossibleErrors(possibleErrors));
 
         if (!APP_OPTIONS.IGNORE_ERRORS) {
