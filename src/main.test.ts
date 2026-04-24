@@ -17,7 +17,6 @@ const videoSegments = new Array(5)
     .fill(0)
     .map((_, i) => `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)
 const errorFile = videoSegments.filter((_, i) => i % 2 === 0)
-const readlineInterface = {close: vi.fn()};
 
 describe("main function", () => {
     beforeEach(() => {
@@ -28,7 +27,7 @@ describe("main function", () => {
     test("should create an output file", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
 
-        main(readlineInterface)
+        main()
 
         const files = fs.readdirSync(".")
         expect(files).toContain(outputFilenameFormatter(baseName))
@@ -38,7 +37,7 @@ describe("main function", () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         const logSpy = vi.spyOn(console, "log");
 
-        main(readlineInterface)
+        main()
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
     })
@@ -48,7 +47,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main(readlineInterface)
+        main()
 
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
@@ -60,7 +59,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main(readlineInterface)
+        main()
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))

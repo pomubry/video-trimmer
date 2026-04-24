@@ -8,10 +8,9 @@ import * as formatter from "./utils/formatter.js";
 import * as validator from "./utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
-import type {Interface} from "node:readline";
 import type {FFmpegArguments, MergeOptions} from "./types/index.js";
 
-export const main = (readlineInterface: Pick<Interface, "close">) => {
+export const main = () => {
     const ts = filesystem.readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
@@ -65,7 +64,7 @@ export const main = (readlineInterface: Pick<Interface, "close">) => {
 
         if (!APP_OPTIONS.IGNORE_ERRORS) {
             console.log("\nAbort merging of video segments. . .");
-            return readlineInterface.close();
+            return;
         }
     } else {
         console.log("\nNo problems were found with the video segments.");
@@ -79,5 +78,4 @@ export const main = (readlineInterface: Pick<Interface, "close">) => {
     }
 
     filesystem.mergeVideos(mergeVideosArgs);
-    return readlineInterface.close();
 };
