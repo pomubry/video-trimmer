@@ -122,3 +122,7 @@ Timestamp duration error at line ${idx + 1}:
 
     return {timestampPairs, totalTime, videoSegmentDurations, videoFilename};
 }
+
+export const timestampSplitTrim = (timestamp: string) => timestamp
+    .split("\n")
+    .map((ts) => ts.trim())

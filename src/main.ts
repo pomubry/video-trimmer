@@ -3,29 +3,19 @@ import path from "node:path";
 
 import * as childProcess from "./services/childProcess.js";
 import * as filesystem from "./repositories/filesystem.js";
-import * as timestamp from "./utils/timestamp.js";
 import * as formatter from "./utils/formatter.js";
 import * as validator from "./utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
-import type {FFmpegArguments, MergeOptions} from "./types/index.js";
+import type {FFmpegArguments, MainArgs, MergeOptions} from "./types/index.js";
 
-export const main = (ts: string) => {
-    const timestampArr = ts.split("\n").map((ts) => ts.trim());
-
-    console.log("\nProcessing timestamps. . .")
+export const main = (args: MainArgs) => {
     const {
         timestampPairs,
         totalTime,
         videoSegmentDurations,
         videoFilename
-    } = timestamp.processTimestamps(timestampArr);
-
-    console.log("\nChecking video file. . .")
-
-    validator.checkFileExtension(videoFilename);
-    validator.checkVideoFilename(videoFilename);
-    filesystem.checkVideoFile(videoFilename);
+    } = args;
 
     const baseName = path.parse(videoFilename).name;
     fs.mkdirSync(baseName, {recursive: true});

@@ -1,8 +1,8 @@
-import fs from "fs";
-
 import {main} from "./main.js";
 import {readTimestamps} from "./repositories/filesystem.js";
-import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
+import {checkTimestampInput} from "./utils/validator.js";
+import {timestampSplitTrim} from "./utils/timestamp.js";
+import {FFMPEG_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
     console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`);
@@ -10,21 +10,9 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 
 try {
     const ts = readTimestamps();
-
-    if (APP_OPTIONS.IS_BATCH) {
-        let ts = ""
-        ts += fs.readFileSync(APP_OPTIONS.BATCH_INPUT);
-        const tsList = ts.split(APP_OPTIONS.BATCH_SEPARATOR)
-            .map(string => string.trim())
-
-        for (const timestamp of tsList) {
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp);
-            main(ts);
-        }
-    } else {
-        main(ts)
-    }
-
+    const timestampArr = timestampSplitTrim(ts);
+    const args = checkTimestampInput(timestampArr);
+    main(args)
 } catch (e) {
     console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =

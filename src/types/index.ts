@@ -13,6 +13,13 @@ export interface FFmpegArguments {
     videoSegments: string[],
 }
 
+export interface MainArgs {
+    timestampPairs: string[][],
+    totalTime: number,
+    videoSegmentDurations: number[],
+    videoFilename: string,
+}
+
 export type FFmpegConfig = typeof FFMPEG_OPTIONS
 
 export type RemoveVideoSegmentArguments = Omit<MergeOptions, "videoDuration" | "elapsedTime">

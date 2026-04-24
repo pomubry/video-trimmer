@@ -1,7 +1,9 @@
 import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
+import {checkVideoFile} from "../repositories/filesystem.js";
 import {errorMsgFormatter} from "./formatter.js";
+import {processTimestamps} from "./timestamp.js";
 import {FILENAME_OPTIONS} from "../config.js";
 
 export const checkFileExtension = (videoFile: string) => {
@@ -57,3 +59,15 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
 
         return acc
     }, [] as string[]);
+
+export const checkTimestampInput = (timestampArr: string[]) => {
+    console.log("\nProcessing timestamps. . .")
+    const res = processTimestamps(timestampArr);
+
+    console.log("\nChecking video file. . .")
+    checkFileExtension(res.videoFilename);
+    checkVideoFilename(res.videoFilename);
+    checkVideoFile(res.videoFilename);
+
+    return res
+}

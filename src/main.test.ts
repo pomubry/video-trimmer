@@ -2,10 +2,13 @@ import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import {main} from "./main.js";
-import * as validator from "./utils/validator.js";
 import {readTimestamps} from "./repositories/filesystem.js";
+import * as validator from "./utils/validator.js";
 import {outputFilenameFormatter, videoCounter} from "./utils/formatter.js";
+import {timestampSplitTrim} from "./utils/timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "./config.js";
+
+import type {MainArgs} from "./types/index.js";
 
 const baseName = "segment"
 const timestampText = `${baseName}.mp4
@@ -18,24 +21,32 @@ const videoSegments = new Array(5)
     .fill(0)
     .map((_, i) => `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)
 const errorFile = videoSegments.filter((_, i) => i % 2 === 0)
+const argsInit: MainArgs = {
+    timestampPairs: [[]],
+    totalTime: 0,
+    videoFilename: "",
+    videoSegmentDurations: []
+}
 
 describe("main function", () => {
-    let ts = "";
+    let args = {...argsInit};
 
     beforeEach(() => {
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
         fs.writeFileSync(`${baseName}.mp4`, "random");
-        ts = readTimestamps();
+        const ts = readTimestamps();
+        const timestampArr = timestampSplitTrim(ts);
+        args = {...validator.checkTimestampInput(timestampArr)};
     })
 
     afterEach(() => {
-        ts = ""
+        args = {...argsInit}
     })
 
     test("should create an output file", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
 
-        main(ts)
+        main(args)
 
         const files = fs.readdirSync(".")
         expect(files).toContain(outputFilenameFormatter(baseName))
@@ -45,7 +56,7 @@ describe("main function", () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         const logSpy = vi.spyOn(console, "log");
 
-        main(ts)
+        main(args)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
     })
@@ -55,7 +66,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main(ts)
+        main(args)
 
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
@@ -67,7 +78,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main(ts)
+        main(args)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
