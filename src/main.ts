@@ -10,8 +10,7 @@ import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
 import type {FFmpegArguments, MergeOptions} from "./types/index.js";
 
-export const main = () => {
-    const ts = filesystem.readTimestamps();
+export const main = (ts: string) => {
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
     console.log("\nProcessing timestamps. . .")

@@ -1,6 +1,7 @@
 import fs from "fs";
 
 import {main} from "./main.js";
+import {readTimestamps} from "./repositories/filesystem.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
@@ -8,6 +9,8 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 }
 
 try {
+    const ts = readTimestamps();
+
     if (APP_OPTIONS.IS_BATCH) {
         let ts = ""
         ts += fs.readFileSync(APP_OPTIONS.BATCH_INPUT);
@@ -16,10 +19,10 @@ try {
 
         for (const timestamp of tsList) {
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp);
-            main();
+            main(ts);
         }
     } else {
-        main()
+        main(ts)
     }
 
 } catch (e) {

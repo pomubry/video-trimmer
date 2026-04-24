@@ -1,8 +1,9 @@
-import {beforeEach, describe, expect, test, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import {main} from "./main.js";
 import * as validator from "./utils/validator.js";
+import {readTimestamps} from "./repositories/filesystem.js";
 import {outputFilenameFormatter, videoCounter} from "./utils/formatter.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
@@ -19,15 +20,22 @@ const videoSegments = new Array(5)
 const errorFile = videoSegments.filter((_, i) => i % 2 === 0)
 
 describe("main function", () => {
+    let ts = "";
+
     beforeEach(() => {
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
         fs.writeFileSync(`${baseName}.mp4`, "random");
+        ts = readTimestamps();
+    })
+
+    afterEach(() => {
+        ts = ""
     })
 
     test("should create an output file", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
 
-        main()
+        main(ts)
 
         const files = fs.readdirSync(".")
         expect(files).toContain(outputFilenameFormatter(baseName))
@@ -37,7 +45,7 @@ describe("main function", () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         const logSpy = vi.spyOn(console, "log");
 
-        main()
+        main(ts)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
     })
@@ -47,7 +55,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main()
+        main(ts)
 
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
@@ -59,7 +67,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main()
+        main(ts)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
