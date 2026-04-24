@@ -3,7 +3,7 @@ import path from "node:path";
 
 import {mergeVideoSegments} from "../services/childProcess.js";
 import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
 
@@ -31,9 +31,9 @@ export const checkVideoFile = (videoFile: string) => {
 }
 
 const removeVideoSegments = (
-    {isVideoSegmentKept, basename, videoSegments}: RemoveVideoSegmentArguments
+    {basename, videoSegments}: RemoveVideoSegmentArguments
 ) => {
-    if (isVideoSegmentKept === "no") {
+    if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
         console.log("\nRemoving video segments:");
         fs.rmSync(basename, {recursive: true, force: true});
         console.log(`\nTotal video segments removed: ${videoSegments.length}`);

@@ -11,7 +11,7 @@ import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 import type {Interface} from "node:readline";
 import type {FFmpegArguments, MergeOptions} from "./types/index.js";
 
-export const main = (answer: string, readlineInterface: Pick<Interface, "close">) => {
+export const main = (readlineInterface: Pick<Interface, "close">) => {
     const ts = filesystem.readTimestamps();
     const timestampArr = ts.split("\n").map((ts) => ts.trim());
 
@@ -74,7 +74,6 @@ export const main = (answer: string, readlineInterface: Pick<Interface, "close">
     const mergeVideosArgs: MergeOptions = {
         videoSegments,
         basename: baseName,
-        isVideoSegmentKept: answer,
         videoDuration: totalTime,
         elapsedTime,
     }

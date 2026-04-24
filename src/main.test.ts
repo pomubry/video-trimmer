@@ -28,7 +28,7 @@ describe("main function", () => {
     test("should create an output file", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
 
-        main("yes", readlineInterface)
+        main(readlineInterface)
 
         const files = fs.readdirSync(".")
         expect(files).toContain(outputFilenameFormatter(baseName))
@@ -38,7 +38,7 @@ describe("main function", () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         const logSpy = vi.spyOn(console, "log");
 
-        main("yes", readlineInterface)
+        main(readlineInterface)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
     })
@@ -48,7 +48,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main("yes", readlineInterface)
+        main(readlineInterface)
 
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
@@ -60,7 +60,7 @@ describe("main function", () => {
         const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
-        main("yes", readlineInterface)
+        main(readlineInterface)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))

@@ -1,8 +1,8 @@
 import fs from "fs";
 import readline from "readline";
 
-import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 import {main} from "./main.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -15,7 +15,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 
 rl.question(
     "\nKeep all video segments? (Default: yes) | [yes|no]: ",
-    async isVideoSegmentKept => {
+    async _ => {
         try {
             if (APP_OPTIONS.IS_BATCH) {
                 let ts = ""
@@ -25,10 +25,10 @@ rl.question(
 
                 for (const timestamp of tsList) {
                     fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp);
-                    main(isVideoSegmentKept.toLocaleLowerCase(), rl);
+                    main(rl);
                 }
             } else {
-                main(isVideoSegmentKept.toLocaleLowerCase(), rl)
+                main(rl)
             }
 
         } catch (e) {
@@ -38,7 +38,7 @@ rl.question(
 * Line 1 should be the video filename including its extension. 
     Example: input.mp4.
 
-* Timestamp format for each line (except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space inbetween.
+* Timestamp format for each line (except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space in between.
     Example: 10:00:00.123456789 11:00:00.123456789
 
 * Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 

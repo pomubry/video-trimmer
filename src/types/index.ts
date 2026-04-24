@@ -3,7 +3,6 @@ import {FFMPEG_OPTIONS} from "../config.js";
 export interface MergeOptions {
     videoSegments: string[],
     basename: string,
-    isVideoSegmentKept: string,
     videoDuration: number,
     elapsedTime: number
 }

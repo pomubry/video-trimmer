@@ -4,7 +4,7 @@ import {fs} from "memfs";
 
 import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
 import {checkVideoFile, mergeVideos, readTimestamps} from "./filesystem.js";
-import {FILENAME_OPTIONS} from "../config.js";
+import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MergeOptions} from "../types/index.js";
 
@@ -56,7 +56,6 @@ describe("Merge video function", () => {
     const args: MergeOptions = {
         videoSegments,
         basename: baseName,
-        isVideoSegmentKept: "yes",
         elapsedTime: 0,
         videoDuration: 10
     }
@@ -107,7 +106,7 @@ describe("Merge video function", () => {
 
     test("Should remove the video segments", async () => {
         const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
-        args.isVideoSegmentKept = "no";
+        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
             outputFilenameFormatter(baseName),
