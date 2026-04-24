@@ -1,13 +1,13 @@
 import fs from "fs";
 import path from "node:path";
 
-import * as childProcess from "./services/childProcess.js";
-import * as filesystem from "./repositories/filesystem.js";
-import * as formatter from "./utils/formatter.js";
-import * as validator from "./utils/validator.js";
-import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "./config.js";
+import {createVideoSegment} from "../services/childProcess.js";
+import {mergeVideos} from "../repositories/filesystem.js";
+import {checkVideoDurationErrors} from "../utils/validator.js";
+import * as formatter from "../utils/formatter.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {FFmpegArguments, MainArgs, MergeOptions} from "./types/index.js";
+import type {FFmpegArguments, MainArgs, MergeOptions} from "../types/index.js";
 
 export const main = (args: MainArgs) => {
     const {
@@ -33,7 +33,7 @@ export const main = (args: MainArgs) => {
     const time1 = Date.now();
     ffmpegScripts.forEach((script) => {
         console.log("\n" + script);
-        childProcess.createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
+        createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
     });
     const elapsedTime = Date.now() - time1;
 
@@ -46,7 +46,7 @@ export const main = (args: MainArgs) => {
 
     // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
     console.log("\nChecking each video segment's length. . .");
-    const possibleErrors = validator.checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
+    const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
     if (!APP_OPTIONS.IS_BATCH && possibleErrors.length > 0) {
         console.error(formatter.listPossibleErrors(possibleErrors));
@@ -66,5 +66,5 @@ export const main = (args: MainArgs) => {
         elapsedTime,
     }
 
-    filesystem.mergeVideos(mergeVideosArgs);
+    mergeVideos(mergeVideosArgs);
 };

@@ -2,13 +2,13 @@ import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import {main} from "./main.js";
-import {readTimestamps} from "./repositories/filesystem.js";
-import * as validator from "./utils/validator.js";
-import {outputFilenameFormatter, videoCounter} from "./utils/formatter.js";
-import {timestampSplitTrim} from "./utils/timestamp.js";
-import {APP_OPTIONS, FILENAME_OPTIONS} from "./config.js";
+import {readTimestamps} from "../repositories/filesystem.js";
+import * as validator from "../utils/validator.js";
+import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
+import {getTimestampArray} from "../utils/timestamp.js";
+import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {MainArgs} from "./types/index.js";
+import type {MainArgs} from "../types/index.js";
 
 const baseName = "segment"
 const timestampText = `${baseName}.mp4
@@ -35,7 +35,7 @@ describe("main function", () => {
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
         fs.writeFileSync(`${baseName}.mp4`, "random");
         const ts = readTimestamps();
-        const timestampArr = timestampSplitTrim(ts);
+        const timestampArr = getTimestampArray(ts);
         args = {...validator.checkTimestampInput(timestampArr)};
     })
 

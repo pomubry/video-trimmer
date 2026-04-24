@@ -1,7 +1,4 @@
-import {main} from "./main.js";
-import {readTimestamps} from "./repositories/filesystem.js";
-import {checkTimestampInput} from "./utils/validator.js";
-import {timestampSplitTrim} from "./utils/timestamp.js";
+import {init} from "./init/init.js";
 import {FFMPEG_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
@@ -9,10 +6,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 }
 
 try {
-    const ts = readTimestamps();
-    const timestampArr = timestampSplitTrim(ts);
-    const args = checkTimestampInput(timestampArr);
-    main(args)
+    init()
 } catch (e) {
     console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =

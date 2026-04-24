@@ -27,6 +27,5 @@ export const APP_OPTIONS = {
     IS_BATCH: false,
     IGNORE_ERRORS: true,
     KEEP_VIDEO_SEGMENTS: true,
-    BATCH_SEPARATOR: "@batch@",
-    BATCH_INPUT: "batch.txt"
+    BATCH_SEPARATOR: "@batch@"
 }
