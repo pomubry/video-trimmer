@@ -141,9 +141,9 @@ describe("Generated FFmpeg Scripts", () => {
         }
 
         const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 23 -c:v hevc "${path.join(basename, `${basename}_001.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -crf 23 -c:v hevc "${path.join(basename, `${basename}_002.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 23 -c:v hevc "${path.join(basename, `${basename}_003.mp4`)}"`
+            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_001.mp4`)}"`,
+            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_002.mp4`)}"`,
+            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_003.mp4`)}"`
         ]
 
         vi.spyOn(FFMPEG_OPTIONS, "HEVC", "get").mockReturnValueOnce(true);

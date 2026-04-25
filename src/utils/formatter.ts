@@ -1,4 +1,5 @@
 import path from "node:path";
+import os from "node:os"
 
 import {timestampPattern} from "./timestamp.js";
 import {FILENAME_OPTIONS} from "../config.js";
@@ -54,12 +55,14 @@ export const createFFmpegScripts = (
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
         if (videoSegments.includes(outputFilename)) return acc;
 
+        const encoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc"
+
         const cmd = [
             "ffmpeg -v warning -stats",
             `-ss ${ts[0]}`,
             `-to ${ts[1]}`,
             `-i "${input}"`,
-            `${HEVC ? "-crf 23 -c:v hevc" : "-crf 18 -c:v h264"}`,
+            `${HEVC ? `-crf 23 -c:v ${encoder} -tag:v hvc1` : "-crf 18 -c:v h264"}`,
             `${FPS === 0 ? "" : `-r ${FPS}`}`,
             `"${path.join(basename, outputFilename)}"`
         ];
