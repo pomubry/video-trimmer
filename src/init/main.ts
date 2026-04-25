@@ -45,7 +45,6 @@ export const main = (args: MainArgs) => {
         .filter((file) => videoSegmentRegExp.test(file));
 
     // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
-    console.log("\nChecking each video segment's length. . .");
     const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
     if (possibleErrors.length > 0) {
@@ -55,8 +54,6 @@ export const main = (args: MainArgs) => {
             console.log("\nAbort merging of video segments. . .");
             return;
         }
-    } else {
-        console.log("\nNo problems were found with the video segments.");
     }
 
     const mergeVideosArgs: MergeOptions = {

@@ -62,6 +62,9 @@ describe("Merge video function", () => {
     const otherFile = "other-file.txt"
 
     beforeEach(() => {
+        vi.spyOn(console, "log").mockImplementation(() => {
+        })
+
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
         fs.writeFileSync(otherFile, randomText);
         fs.mkdirSync(baseName)
@@ -91,11 +94,8 @@ describe("Merge video function", () => {
         })
         expect(files).toContain(otherFile)
         expect(copiedData).toBe(randomText)
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/temporarily/i))
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/merging video segments/i))
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/has been created/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/will be kept/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/creating copy of/i))
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(
             new RegExp(`should be about ${totalTimeLogged}`, "i")
         ))
@@ -105,7 +105,6 @@ describe("Merge video function", () => {
     })
 
     test("Should remove the video segments", async () => {
-        const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -114,7 +113,6 @@ describe("Merge video function", () => {
         ]
 
         mergeVideos(args);
-        const logged = `total video segments removed: ${videoSegments.length}`
         const files = fs.readdirSync(".")
 
         expectedFiles.forEach(file => {
@@ -122,7 +120,5 @@ describe("Merge video function", () => {
         })
         expect(files).toContain(otherFile)
         expect(files).not.toContain(baseName)
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/removing video segment/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(new RegExp(logged, "i")))
     })
 })

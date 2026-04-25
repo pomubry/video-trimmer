@@ -34,11 +34,7 @@ const removeVideoSegments = (
     {basename, videoSegments}: RemoveVideoSegmentArguments
 ) => {
     if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
-        console.log("\nRemoving video segments:");
         fs.rmSync(basename, {recursive: true, force: true});
-        console.log(`\nTotal video segments removed: ${videoSegments.length}`);
-    } else {
-        console.log("\nVideo segments will be kept.");
     }
 }
 
@@ -53,8 +49,6 @@ const createSegmentList = (videoSegments: string[], basename: string) => {
             (myList += `${index !== 0 ? "\n" : ""}file '${path.join(basename, file)}'`)
     );
     fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
-
-    console.log(`\n${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME} has been created temporarily. . .`);
 }
 
 export const mergeVideos = (mergeOptions: MergeOptions) => {
@@ -79,9 +73,7 @@ export const mergeVideos = (mergeOptions: MergeOptions) => {
     mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
     console.log(`
-\x1b[32m${outputFile}\x1b[0m has been created.
-    
-Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
+\x1b[32m${outputFile}\x1b[0m has been created.`
     );
 
     fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
@@ -91,12 +83,13 @@ Removing ${FILENAME_OPTIONS.SEGMENT_LIST_FILENAME}. . .`
     removeVideoSegments(rest)
     createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, basename);
 
-    console.log(`\nCreating copy of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}. . .`)
-
     let sexagesimal = sexagesimalFormat(videoDuration);
 
     console.log(`
 Video trimmer has finished. Video output should be about ${sexagesimal} long. 
-Total processing time: ${sexagesimalFormat(elapsedTime / 1000)}`
+Total processing time: ${sexagesimalFormat(elapsedTime / 1000)}
+`
     );
+
+    console.log('='.repeat(process.stdout.columns));
 };

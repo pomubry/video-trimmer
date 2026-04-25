@@ -61,10 +61,8 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
     }, [] as string[]);
 
 export const checkTimestampInput = (timestampArr: string[]) => {
-    console.log("\nProcessing timestamps. . .")
     const res = processTimestamps(timestampArr);
 
-    console.log("\nChecking video file. . .")
     checkFileExtension(res.videoFilename);
     checkVideoFilename(res.videoFilename);
     checkVideoFile(res.videoFilename);

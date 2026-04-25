@@ -43,8 +43,10 @@ const getArgs = (videoFilename: string) => {
 
 describe("init function", () => {
     beforeEach(() => {
-        vi.spyOn(console, 'log').mockImplementation(() => {
-        });
+        vi.spyOn(console, "log").mockImplementation(() => {
+        })
+        vi.spyOn(console, "error").mockImplementation(() => {
+        })
     })
 
     test("should do single operation", async () => {

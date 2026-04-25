@@ -32,6 +32,11 @@ describe("main function", () => {
     let args = {...argsInit};
 
     beforeEach(() => {
+        vi.spyOn(console, "log").mockImplementation(() => {
+        })
+        vi.spyOn(console, "error").mockImplementation(() => {
+        })
+
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
         fs.writeFileSync(`${baseName}.mp4`, "random");
         const ts = readTimestamps();
@@ -52,23 +57,12 @@ describe("main function", () => {
         expect(files).toContain(outputFilenameFormatter(baseName))
     })
 
-    test("should log that no problems were found", async () => {
-        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
-        const logSpy = vi.spyOn(console, "log");
-
-        main(args)
-
-        expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
-    })
-
     test("should log possible errors", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue(errorFile);
-        const logSpy = vi.spyOn(console, "log");
         const errorSpy = vi.spyOn(console, "error");
 
         main(args)
 
-        expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
     })
 
@@ -81,7 +75,6 @@ describe("main function", () => {
         main(args)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
-        expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/no problems were found/i))
         expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
 
         const dir = fs.readdirSync(".");
@@ -93,5 +86,4 @@ describe("main function", () => {
             expect(segmentDir).toContain(segment)
         })
     })
-
 })
