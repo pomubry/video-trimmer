@@ -246,7 +246,7 @@ var checkVideoFile = (videoFile) => {
     );
   }
 };
-var removeVideoSegments = ({ basename, videoSegments }) => {
+var removeVideoSegments = ({ basename }) => {
   if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
     import_node_fs.default.rmSync(basename, { recursive: true, force: true });
   }

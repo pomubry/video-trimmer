@@ -31,7 +31,7 @@ export const checkVideoFile = (videoFile: string) => {
 }
 
 const removeVideoSegments = (
-    {basename, videoSegments}: RemoveVideoSegmentArguments
+    {basename}: RemoveVideoSegmentArguments
 ) => {
     if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
         fs.rmSync(basename, {recursive: true, force: true});

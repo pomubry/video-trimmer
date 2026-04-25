@@ -22,4 +22,4 @@ export interface MainArgs {
 
 export type FFmpegConfig = typeof FFMPEG_OPTIONS
 
-export type RemoveVideoSegmentArguments = Omit<MergeOptions, "videoDuration" | "elapsedTime">
+export type RemoveVideoSegmentArguments = Omit<MergeOptions, "videoSegments" | "videoDuration" | "elapsedTime">
