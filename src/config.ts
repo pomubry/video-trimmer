@@ -1,6 +1,6 @@
-import type {ExecSyncOptions} from "node:child_process";
+import type {FFmpegConfig} from "./types/index.js";
 
-export const FFMPEG_OPTIONS: { OFFSET: number, FPS: number, HEVC: boolean, EXEC_SYNC_OPTIONS: ExecSyncOptions } =
+export const FFMPEG_OPTIONS: FFmpegConfig =
     {
         OFFSET: 0, // offset in seconds.
         FPS: 0, // override in case of low fps from VFR inputs.

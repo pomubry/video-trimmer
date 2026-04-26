@@ -1,11 +1,4 @@
-import {FFMPEG_OPTIONS} from "../config.js";
-
-export interface MergeOptions {
-    videoSegments: string[],
-    basename: string,
-    videoDuration: number,
-    elapsedTime: number
-}
+import type {ExecSyncOptions} from "node:child_process";
 
 export interface FFmpegArguments {
     input: string,
@@ -20,6 +13,9 @@ export interface MainArgs {
     videoFilename: string,
 }
 
-export type FFmpegConfig = typeof FFMPEG_OPTIONS
-
-export type RemoveVideoSegmentArguments = Omit<MergeOptions, "videoSegments" | "videoDuration" | "elapsedTime">
+export interface FFmpegConfig {
+    OFFSET: number,
+    FPS: number,
+    HEVC: boolean,
+    EXEC_SYNC_OPTIONS: ExecSyncOptions
+}

@@ -2,16 +2,23 @@ import path from "node:path";
 import {vi, describe, test, beforeEach, expect} from 'vitest'
 import {fs} from "memfs";
 
-import {outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
-import {checkVideoFile, mergeVideos, readTimestamps} from "./filesystem.js";
+import {
+    checkVideoFile,
+    createSegmentList,
+    createTimestampCopy,
+    readTimestamps,
+    removeOutputIfExists,
+    removeSegmentList,
+    removeVideoSegments
+} from "./filesystem.js";
+import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {MergeOptions} from "../types/index.js";
 
-const baseName = "segment"
+const baseName = "input"
 const videoSegments = new Array(3)
     .fill(0)
-    .map((_, i) => `${baseName}_${i + 1}.mp4`)
+    .map((_, i) => `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)
 const newTimestampFilename = "otherFile.txt"
 const randomText = "some text"
 
@@ -52,21 +59,60 @@ describe("Video File Checker", () => {
     })
 })
 
-describe("Merge video function", () => {
-    const args: MergeOptions = {
-        videoSegments,
-        basename: baseName,
-        elapsedTime: 0,
-        videoDuration: 10
-    }
-    const otherFile = "other-file.txt"
+describe("createSegmentList", () => {
+    test("Should create a list of video segments", () => {
+        const expectedText = `file '${path.join(baseName, `${baseName}_${videoCounter(1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
+file '${path.join(baseName, `${baseName}_${videoCounter(2)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
+file '${path.join(baseName, `${baseName}_${videoCounter(3)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'`
 
+        createSegmentList(videoSegments, baseName);
+
+        const res = fs.readFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, {encoding: "utf-8"});
+        expect(res).toBe(expectedText);
+    })
+})
+
+describe("removeSegmentList", () => {
+    test("Should remove the segment list file", () => {
+        fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, randomText);
+
+        removeSegmentList();
+
+        expect(fs.readdirSync(".").length).toBe(0);
+    })
+})
+
+describe("removeOutputIfExists", () => {
+    test("Should remove the output file if it exists", () => {
+        const outputFilename = outputFilenameFormatter(baseName);
+        fs.writeFileSync(outputFilename, randomText);
+
+        removeOutputIfExists(outputFilename);
+
+        const res = fs.readdirSync(".")
+        expect(res.length).toBe(0);
+    })
+
+    test("Should keep other files", () => {
+        const outputFilename = outputFilenameFormatter(baseName);
+        fs.writeFileSync(outputFilename, randomText);
+        fs.writeFileSync("otherFile.txt", randomText);
+
+        removeOutputIfExists(outputFilename);
+
+        const res = fs.readdirSync(".")
+        expect(res.length).toBe(1);
+    })
+
+    test("Should not throw if output file does not exists", () => {
+        const outputFilename = outputFilenameFormatter(baseName);
+
+        expect(() => removeOutputIfExists(outputFilename)).not.toThrow();
+    })
+})
+
+describe("removeVideoSegments", () => {
     beforeEach(() => {
-        vi.spyOn(console, "log").mockImplementation(() => {
-        })
-
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
-        fs.writeFileSync(otherFile, randomText);
         fs.mkdirSync(baseName)
         videoSegments.forEach(segment => {
             const file = path.join(baseName, segment)
@@ -74,51 +120,48 @@ describe("Merge video function", () => {
         })
     })
 
-    test("Should merge the video segments", async () => {
-        const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
-        const expectedFiles = [
-            FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-            outputFilenameFormatter(baseName),
-            baseName,
-            `${baseName}.txt`
-        ]
-
-        mergeVideos(args);
-        const files = fs.readdirSync(".")
-        const copiedData = fs.readFileSync(baseName + ".txt", "utf-8")
-        const totalTimeLogged = sexagesimalFormat(args.videoDuration);
-        const processingTime = sexagesimalFormat(args.elapsedTime / 1000);
-
-        expectedFiles.forEach(file => {
-            expect(files).toContain(file)
-        })
-        expect(files).toContain(otherFile)
-        expect(copiedData).toBe(randomText)
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/merging video segments/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/has been created/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(
-            new RegExp(`should be about ${totalTimeLogged}`, "i")
-        ))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(
-            new RegExp(`total processing time: ${processingTime}`, "i")
-        ))
-    })
-
     test("Should remove the video segments", async () => {
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
-        const expectedFiles = [
-            FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-            outputFilenameFormatter(baseName),
-            `${baseName}.txt`
-        ]
 
-        mergeVideos(args);
-        const files = fs.readdirSync(".")
+        expect(fs.readdirSync(".").length).toBe(1);
+        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
 
-        expectedFiles.forEach(file => {
-            expect(files).toContain(file)
-        })
-        expect(files).toContain(otherFile)
-        expect(files).not.toContain(baseName)
+        removeVideoSegments(baseName);
+
+        expect(fs.readdirSync(".").length).toBe(0);
+    })
+
+    test("Should keep other files", () => {
+        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
+        fs.writeFileSync("otherFile.txt", randomText);
+
+        expect(fs.readdirSync(".").length).toBe(2);
+        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+
+        removeVideoSegments(baseName);
+
+        const res = fs.readdirSync(".")
+        expect(res.length).toBe(1);
+    })
+
+    test("Should keep the video segments", async () => {
+        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true)
+
+        expect(fs.readdirSync(".").length).toBe(1);
+        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+
+        removeVideoSegments(baseName);
+
+        expect(fs.readdirSync(".").length).toBe(1);
+        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    })
+})
+
+describe("createTimestampCopy", () => {
+    test("Should create a copy of the timestamp file", () => {
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
+        createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, baseName);
+
+        expect(fs.readdirSync(".")).toContain(baseName + ".txt")
     })
 })

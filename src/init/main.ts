@@ -1,13 +1,24 @@
 import fs from "fs";
 import path from "node:path";
 
-import {createVideoSegment} from "../services/childProcess.js";
-import {mergeVideos} from "../repositories/filesystem.js";
+import {createVideoSegment, mergeVideoSegments} from "../services/childProcess.js";
+import {
+    createSegmentList,
+    createTimestampCopy,
+    removeOutputIfExists, removeSegmentList,
+    removeVideoSegments
+} from "../repositories/filesystem.js";
+import {
+    createFFmpegScripts,
+    getVideoSegmentRegExp,
+    greenText, listPossibleErrors,
+    outputFilenameFormatter,
+    sexagesimalFormat
+} from "../utils/formatter.js";
 import {checkVideoDurationErrors} from "../utils/validator.js";
-import * as formatter from "../utils/formatter.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {FFmpegArguments, MainArgs, MergeOptions} from "../types/index.js";
+import type {FFmpegArguments, MainArgs} from "../types/index.js";
 
 export const main = (args: MainArgs) => {
     const {
@@ -26,7 +37,7 @@ export const main = (args: MainArgs) => {
         timestampPairs,
         videoSegments
     }
-    const ffmpegScripts: string[] = formatter.createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
+    const ffmpegScripts: string[] = createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
 
     console.log("\nExecuting FFmpeg. This may take a while. . .");
 
@@ -35,11 +46,11 @@ export const main = (args: MainArgs) => {
         console.log("\n" + script);
         createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
     });
-    const elapsedTime = Date.now() - time1;
+    const elapsedTime = (Date.now() - time1) / 1000;
 
     // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
     // where XYZ is the number of the video, i.e., fileName_001.mp4.
-    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
+    const videoSegmentRegExp = getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
     videoSegments = fs
         .readdirSync(baseName)
         .filter((file) => videoSegmentRegExp.test(file));
@@ -48,7 +59,7 @@ export const main = (args: MainArgs) => {
     const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
 
     if (possibleErrors.length > 0) {
-        console.error(formatter.listPossibleErrors(possibleErrors));
+        console.error(listPossibleErrors(possibleErrors));
 
         if (!APP_OPTIONS.IGNORE_ERRORS) {
             console.log("\nAbort merging of video segments. . .");
@@ -56,12 +67,31 @@ export const main = (args: MainArgs) => {
         }
     }
 
-    const mergeVideosArgs: MergeOptions = {
-        videoSegments,
-        basename: baseName,
-        videoDuration: totalTime,
-        elapsedTime,
-    }
+    createSegmentList(videoSegments, baseName);
 
-    mergeVideos(mergeVideosArgs);
+    const outputFile = outputFilenameFormatter(baseName);
+
+    removeOutputIfExists(outputFile)
+
+    console.log("\nMerging video segments. . .");
+
+    mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+
+    console.log(`\n${greenText(outputFile)} has been created.`);
+
+    removeSegmentList();
+
+    removeVideoSegments(baseName);
+
+    createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, baseName);
+
+    let sexagesimal = sexagesimalFormat(totalTime);
+
+    console.log(`
+Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+Total processing time: ${sexagesimalFormat(elapsedTime)}
+`
+    );
+
+    console.log('='.repeat(process.stdout.columns));
 };

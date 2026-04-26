@@ -4,6 +4,7 @@ import {vi, describe, test, beforeEach, expect} from "vitest";
 import {
     createFFmpegScripts,
     getVideoSegmentRegExp,
+    outputFilenameFormatter,
     sexagesimalToSeconds,
     videoCounter
 } from "./formatter.js";
@@ -199,5 +200,14 @@ describe("Video Segment Regexp", () => {
 
     test("Return false for invalid filenames", () => {
         expect(regexp.test("someOtherFile.ts")).toBe(false);
+    })
+})
+
+describe("outputFilenameFormatter", () => {
+    test("Should return correct filename format", () => {
+        const input = "input";
+        const expectedFilename = `input (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
+
+        expect(outputFilenameFormatter(input)).toBe(expectedFilename);
     })
 })
