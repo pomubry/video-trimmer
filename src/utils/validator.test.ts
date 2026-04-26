@@ -19,7 +19,30 @@ describe("checkVideoFilename", () => {
     })
 
     test("Should throw with invalid input video characters", () => {
-        expect(() => checkVideoFilename("input(shouldHaveNoParenthesis).mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo`.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo~.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo!.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo@.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo#.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo$.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo%.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo^.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo&.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo*.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo().mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo=.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo[].mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo{}.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo\\.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo|.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo/.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo;.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo:.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo'.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo\".mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo,.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo<>.mp4")).toThrow();
+        expect(() => checkVideoFilename("inputShouldHaveNo?.mp4")).toThrow();
     })
 })
 

@@ -20,9 +20,9 @@ Only the following extensions are valid:
 }
 
 export const checkVideoFilename = (videoFilename: string) => {
-    const res = !/[(|)]/.test(videoFilename)
+    const isInvalidFilename = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/.test(videoFilename)
 
-    if (!res) {
+    if (isInvalidFilename) {
         throw new Error(
             errorMsgFormatter("The video filename should not contain any parentheses.")
         )
