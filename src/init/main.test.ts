@@ -82,6 +82,22 @@ describe("main function", () => {
         ))
     })
 
+    test("should not create timestamp copy", async () => {
+        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
+        vi.spyOn(APP_OPTIONS, "KEEP_TIMESTAMP_COPY", "get").mockReturnValue(false)
+        const expectedFiles = [
+            FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
+            outputFilenameFormatter(baseName),
+            baseName,
+            otherFile
+        ]
+
+        main(args)
+
+        const files = fs.readdirSync(".")
+        expect(files).toEqual(expect.arrayContaining(expectedFiles))
+    })
+
     test("should remove video segment folder", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)

@@ -74,7 +74,8 @@ var FILENAME_OPTIONS = {
 var APP_OPTIONS = {
   IGNORE_ERRORS: true,
   KEEP_VIDEO_SEGMENTS: true,
-  BATCH_SEPARATOR: "@batch@"
+  BATCH_SEPARATOR: "@batch@",
+  KEEP_TIMESTAMP_COPY: true
 };
 
 // src/utils/timestamp.ts
@@ -366,7 +367,7 @@ var main = (args) => {
 ${greenText(outputFile)} has been created.`);
   removeSegmentList();
   removeVideoSegments(baseName);
-  createTimestampCopy(baseName, args.timestamp);
+  APP_OPTIONS.KEEP_TIMESTAMP_COPY && createTimestampCopy(baseName, args.timestamp);
   let sexagesimal = sexagesimalFormat(totalTime);
   console.log(
     `

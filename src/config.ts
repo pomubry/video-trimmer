@@ -26,5 +26,6 @@ export const FILENAME_OPTIONS = {
 export const APP_OPTIONS = {
     IGNORE_ERRORS: true,
     KEEP_VIDEO_SEGMENTS: true,
-    BATCH_SEPARATOR: "@batch@"
+    BATCH_SEPARATOR: "@batch@",
+    KEEP_TIMESTAMP_COPY: true,
 }
