@@ -83,6 +83,11 @@ describe("removeSegmentList", () => {
 })
 
 describe("removeOutputIfExists", () => {
+    beforeEach(() => {
+        vi.spyOn(console, "log").mockImplementation(() => {
+        })
+    })
+
     test("Should remove the output file if it exists", () => {
         const outputFilename = outputFilenameFormatter(baseName);
         fs.writeFileSync(outputFilename, randomText);

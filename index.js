@@ -163,7 +163,7 @@ Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
   );
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 };
-var getTimestampArray = (timestamp) => timestamp.split("\n").map((ts) => ts.trim());
+var getTimestampArray = (timestamp, separator) => timestamp.split(separator).map((ts) => ts.trim()).filter(Boolean);
 
 // src/utils/formatter.ts
 var sexagesimalFormat = (durationInSeconds) => {
@@ -229,6 +229,7 @@ ${possibleErrors.map((err) => "	" + err).join("\n")}
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`;
 var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 var greenText = (text) => `\x1B[32m${text}\x1B[0m`;
+var getSuggestedFilename = (filename) => `Try renaming your filename to [${greenText(filename)}] instead.`;
 
 // src/repositories/filesystem.ts
 var readTimestamps = () => {
@@ -294,7 +295,7 @@ var checkVideoFilename = (videoFilename) => {
     const newFilename = videoFilename.replace(specialCharsRegex, "_");
     throw new Error(
       errorMsgFormatter(`The video filename should not contain any special characters.
-Try renaming your filename to [${greenText(newFilename)}] instead.`)
+${getSuggestedFilename(newFilename)}`)
     );
   }
 };
@@ -382,8 +383,8 @@ Total processing time: ${sexagesimalFormat(elapsedTime)}
 var init = () => {
   const ts = readTimestamps();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
-    const timestampBatch = ts.split(APP_OPTIONS.BATCH_SEPARATOR).map((ts2) => ts2.trim());
-    const mainArgs = timestampBatch.map(getTimestampArray).map(checkTimestampInput);
+    const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
+    const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map(checkTimestampInput);
     mainArgs.forEach((arg, i) => {
       if (timestampBatch[i] === void 0)
         throw new Error(
@@ -397,7 +398,7 @@ var init = () => {
       });
     });
   } else {
-    const timestampArr = getTimestampArray(ts);
+    const timestampArr = getTimestampArray(ts, "\n");
     const args = checkTimestampInput(timestampArr);
     main({
       timestamp: ts,
