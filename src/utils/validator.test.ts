@@ -44,6 +44,13 @@ describe("checkVideoFilename", () => {
         expect(() => checkVideoFilename("inputShouldHaveNo<>.mp4")).toThrow();
         expect(() => checkVideoFilename("inputShouldHaveNo?.mp4")).toThrow();
     })
+
+    test("should throw with a suggested filename", () => {
+        const filename = "my! invalid@input$.mp4"
+        const expectedFilename = "my_ invalid_input_.mp4"
+
+        expect(() => checkVideoFilename(filename)).toThrow(expectedFilename)
+    })
 })
 
 describe("checkVideoDuration", () => {

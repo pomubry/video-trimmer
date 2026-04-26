@@ -2,7 +2,7 @@ import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
 import {checkVideoFile} from "../repositories/filesystem.js";
-import {errorMsgFormatter} from "./formatter.js";
+import {errorMsgFormatter, specialCharsRegex} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
 import {FILENAME_OPTIONS} from "../config.js";
 
@@ -20,11 +20,13 @@ Only the following extensions are valid:
 }
 
 export const checkVideoFilename = (videoFilename: string) => {
-    const isInvalidFilename = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/.test(videoFilename)
+    const isInvalidFilename = specialCharsRegex.test(videoFilename)
 
     if (isInvalidFilename) {
+        const newFilename = videoFilename.replace(specialCharsRegex, "_");
         throw new Error(
-            errorMsgFormatter("The video filename should not contain any parentheses.")
+            errorMsgFormatter(`The video filename should not contain any special characters.
+Try renaming your filename to [${newFilename}] instead.`)
         )
     }
 };

@@ -226,6 +226,7 @@ Please check the following files for possible errors:
 ${possibleErrors.map((err) => "	" + err).join("\n")}
 
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`;
+var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 
 // src/repositories/filesystem.ts
 var readTimestamps = () => {
@@ -307,10 +308,12 @@ Only the following extensions are valid:
   }
 };
 var checkVideoFilename = (videoFilename) => {
-  const res = !/[(|)]/.test(videoFilename);
-  if (!res) {
+  const isInvalidFilename = specialCharsRegex.test(videoFilename);
+  if (isInvalidFilename) {
+    const newFilename = videoFilename.replace(specialCharsRegex, "_");
     throw new Error(
-      errorMsgFormatter("The video filename should not contain any parentheses.")
+      errorMsgFormatter(`The video filename should not contain any special characters.
+Try renaming your filename to [${newFilename}] instead.`)
     );
   }
 };
