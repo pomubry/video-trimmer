@@ -89,3 +89,5 @@ ${possibleErrors.map(err => "\t" + err).join("\n")}
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`
 
 export const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
+
+export const greenText = (text: string) => `\x1b[32m${text}\x1b[0m`

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {mergeVideoSegments} from "../services/childProcess.js";
-import {errorMsgFormatter, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
+import {errorMsgFormatter, greenText, outputFilenameFormatter, sexagesimalFormat} from "../utils/formatter.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MergeOptions, RemoveVideoSegmentArguments} from "../types/index.js";
@@ -73,7 +73,7 @@ export const mergeVideos = (mergeOptions: MergeOptions) => {
     mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
     console.log(`
-\x1b[32m${outputFile}\x1b[0m has been created.`
+${greenText(outputFile)} has been created.`
     );
 
     fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);

@@ -227,6 +227,7 @@ ${possibleErrors.map((err) => "	" + err).join("\n")}
 
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`;
 var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
+var greenText = (text) => `\x1B[32m${text}\x1B[0m`;
 
 // src/repositories/filesystem.ts
 var readTimestamps = () => {
@@ -278,7 +279,7 @@ The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before mak
   mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
   console.log(
     `
-\x1B[32m${outputFile}\x1B[0m has been created.`
+${greenText(outputFile)} has been created.`
   );
   import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
   const { videoDuration, elapsedTime, ...rest } = mergeOptions;
@@ -313,7 +314,7 @@ var checkVideoFilename = (videoFilename) => {
     const newFilename = videoFilename.replace(specialCharsRegex, "_");
     throw new Error(
       errorMsgFormatter(`The video filename should not contain any special characters.
-Try renaming your filename to [${newFilename}] instead.`)
+Try renaming your filename to [${greenText(newFilename)}] instead.`)
     );
   }
 };
