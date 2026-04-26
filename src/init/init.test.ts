@@ -21,7 +21,8 @@ const batchTimestamp = `${getSingleTimestamp(`${baseName}1.mp4`)}
 @batch@
 ${getSingleTimestamp(`${baseName}2.mp4`)}
 @batch@
-${getSingleTimestamp(`${baseName}3.mp4`)}`
+${getSingleTimestamp(`${baseName}3.mp4`)}
+@batch@`
 
 const getArgs = (videoFilename: string) => {
     const videoSegmentDurations = [60, 120, 180, 240, 300]

@@ -128,7 +128,7 @@ describe("getTimestampArray", () => {
             "00:14:00.000 00:19:00.000"
         ]
 
-        const res = getTimestampArray(timestamp);
+        const res = getTimestampArray(timestamp, "\n");
         expect(res).toEqual(expectedArray)
     })
 })

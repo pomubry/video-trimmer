@@ -44,7 +44,7 @@ describe("main function", () => {
         fs.writeFileSync(otherFile, "random");
 
         const ts = readTimestamps();
-        const timestampArr = getTimestampArray(ts);
+        const timestampArr = getTimestampArray(ts, "\n");
         args = {
             timestamp: timestampText,
             ...validator.checkTimestampInput(timestampArr)

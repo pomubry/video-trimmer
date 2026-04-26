@@ -9,12 +9,10 @@ export const init = () => {
     const ts = readTimestamps();
 
     if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
-        const timestampBatch = ts
-            .split(APP_OPTIONS.BATCH_SEPARATOR)
-            .map((ts) => ts.trim())
+        const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
 
         const mainArgs = timestampBatch
-            .map(getTimestampArray)
+            .map((ts) => getTimestampArray(ts, "\n"))
             .map(checkTimestampInput)
 
         mainArgs.forEach((arg, i) => {
@@ -31,7 +29,7 @@ export const init = () => {
             })
         })
     } else {
-        const timestampArr = getTimestampArray(ts);
+        const timestampArr = getTimestampArray(ts, "\n");
         const args = checkTimestampInput(timestampArr);
         main({
             timestamp: ts,
