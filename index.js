@@ -162,7 +162,7 @@ Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
   );
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 };
-var getTimestampArray = (timestamp) => timestamp.split("\n").filter((ts) => ts.trim() !== "").map((ts) => ts.trim());
+var getTimestampArray = (timestamp) => timestamp.split("\n").map((ts) => ts.trim());
 
 // src/utils/formatter.ts
 var sexagesimalFormat = (durationInSeconds) => {
@@ -248,14 +248,6 @@ var checkVideoFile = (videoFile) => {
     );
   }
 };
-var removeVideoSegments = ({ basename }) => {
-  if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
-    import_node_fs.default.rmSync(basename, { recursive: true, force: true });
-  }
-};
-var createTimestampCopy = (timestampsFilename, outputFilename) => {
-  import_node_fs.default.copyFileSync(`${timestampsFilename}`, `${outputFilename}.txt`);
-};
 var createSegmentList = (videoSegments, basename) => {
   let myList = "";
   videoSegments.forEach(
@@ -263,36 +255,23 @@ var createSegmentList = (videoSegments, basename) => {
   );
   import_node_fs.default.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
 };
-var mergeVideos = (mergeOptions) => {
-  const {
-    videoSegments,
-    basename
-  } = mergeOptions;
-  createSegmentList(videoSegments, basename);
-  const outputFile = outputFilenameFormatter(basename);
+var removeSegmentList = () => {
+  import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
+};
+var removeOutputIfExists = (outputFile) => {
   if (import_node_fs.default.readdirSync(".").includes(outputFile)) {
     console.log(`
 The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before making a new one. . .`);
     import_node_fs.default.rmSync(outputFile);
   }
-  console.log("\nMerging video segments. . .");
-  mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
-  console.log(
-    `
-${greenText(outputFile)} has been created.`
-  );
-  import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
-  const { videoDuration, elapsedTime, ...rest } = mergeOptions;
-  removeVideoSegments(rest);
-  createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, basename);
-  let sexagesimal = sexagesimalFormat(videoDuration);
-  console.log(
-    `
-Video trimmer has finished. Video output should be about ${sexagesimal} long. 
-Total processing time: ${sexagesimalFormat(elapsedTime / 1e3)}
-`
-  );
-  console.log("=".repeat(process.stdout.columns));
+};
+var removeVideoSegments = (baseName) => {
+  if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
+    import_node_fs.default.rmSync(baseName, { recursive: true, force: true });
+  }
+};
+var createTimestampCopy = (outputFilename, content) => {
+  import_node_fs.default.writeFileSync(`${outputFilename}.txt`, `${content}`, { encoding: "utf-8" });
 };
 
 // src/utils/validator.ts
@@ -367,7 +346,7 @@ var main = (args) => {
     console.log("\n" + script);
     createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
   });
-  const elapsedTime = Date.now() - time1;
+  const elapsedTime = (Date.now() - time1) / 1e3;
   const videoSegmentRegExp = getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
   videoSegments = import_fs.default.readdirSync(baseName).filter((file) => videoSegmentRegExp.test(file));
   const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
@@ -378,26 +357,51 @@ var main = (args) => {
       return;
     }
   }
-  const mergeVideosArgs = {
-    videoSegments,
-    basename: baseName,
-    videoDuration: totalTime,
-    elapsedTime
-  };
-  mergeVideos(mergeVideosArgs);
+  createSegmentList(videoSegments, baseName);
+  const outputFile = outputFilenameFormatter(baseName);
+  removeOutputIfExists(outputFile);
+  console.log("\nMerging video segments. . .");
+  mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, outputFile, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
+  console.log(`
+${greenText(outputFile)} has been created.`);
+  removeSegmentList();
+  removeVideoSegments(baseName);
+  createTimestampCopy(baseName, args.timestamp);
+  let sexagesimal = sexagesimalFormat(totalTime);
+  console.log(
+    `
+Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+Total processing time: ${sexagesimalFormat(elapsedTime)}
+`
+  );
+  console.log("=".repeat(process.stdout.columns));
 };
 
 // src/init/init.ts
 var init = () => {
   const ts = readTimestamps();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
-    const timestampBatch = ts.split(APP_OPTIONS.BATCH_SEPARATOR).filter((ts2) => ts2.trim() !== "").map(getTimestampArray);
-    const mainArgs = timestampBatch.map(checkTimestampInput);
-    mainArgs.forEach((arg) => main(arg));
+    const timestampBatch = ts.split(APP_OPTIONS.BATCH_SEPARATOR).map((ts2) => ts2.trim());
+    const mainArgs = timestampBatch.map(getTimestampArray).map(checkTimestampInput);
+    mainArgs.forEach((arg, i) => {
+      if (timestampBatch[i] === void 0)
+        throw new Error(
+          errorMsgFormatter(
+            `Index ${i} of the timestamp batch is undefined.${timestampBatch}`
+          )
+        );
+      main({
+        timestamp: timestampBatch[i],
+        ...arg
+      });
+    });
   } else {
     const timestampArr = getTimestampArray(ts);
     const args = checkTimestampInput(timestampArr);
-    main(args);
+    main({
+      timestamp: ts,
+      ...args
+    });
   }
 };
 

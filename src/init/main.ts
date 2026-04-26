@@ -83,7 +83,7 @@ export const main = (args: MainArgs) => {
 
     removeVideoSegments(baseName);
 
-    createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, baseName);
+    createTimestampCopy(baseName, args.timestamp);
 
     let sexagesimal = sexagesimalFormat(totalTime);
 

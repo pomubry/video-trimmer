@@ -158,9 +158,8 @@ describe("removeVideoSegments", () => {
 })
 
 describe("createTimestampCopy", () => {
-    test("Should create a copy of the timestamp file", () => {
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
-        createTimestampCopy(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, baseName);
+    test("Should create a copy of the timestamp", () => {
+        createTimestampCopy(baseName, randomText);
 
         expect(fs.readdirSync(".")).toContain(baseName + ".txt")
     })

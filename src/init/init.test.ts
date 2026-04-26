@@ -26,12 +26,13 @@ ${getSingleTimestamp(`${baseName}3.mp4`)}`
 const getArgs = (videoFilename: string) => {
     const videoSegmentDurations = [60, 120, 180, 240, 300]
     return {
+        timestamp: getSingleTimestamp(videoFilename),
         timestampPairs: [
             ["00:00:00.000", "00:01:00.000"],
             ["00:02:00.000", "00:04:00.000"],
             ["00:05:00.000", "00:08:00.000"],
             ["00:09:00.000", "00:13:00.000"],
-            ["00:14:00.000", "00:19:00.000"],
+            ["00:14:00.000", "00:19:00.000"]
         ],
         totalTime:
             videoSegmentDurations.reduce((acc, cur) => acc + cur, 0),

@@ -22,6 +22,7 @@ const videoSegments = new Array(5)
     .map((_, i) => `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)
 const errorFile = videoSegments.filter((_, i) => i % 2 === 0)
 const argsInit: MainArgs = {
+    timestamp: timestampText,
     timestampPairs: [[]],
     totalTime: 0,
     videoFilename: "",
@@ -44,7 +45,10 @@ describe("main function", () => {
 
         const ts = readTimestamps();
         const timestampArr = getTimestampArray(ts);
-        args = {...validator.checkTimestampInput(timestampArr)};
+        args = {
+            timestamp: timestampText,
+            ...validator.checkTimestampInput(timestampArr)
+        };
     })
 
     afterEach(() => {

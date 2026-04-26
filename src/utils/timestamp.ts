@@ -125,5 +125,4 @@ Timestamp duration error at line ${idx + 1}:
 
 export const getTimestampArray = (timestamp: string) => timestamp
     .split("\n")
-    .filter((ts) => ts.trim() !== "")
     .map((ts) => ts.trim())

@@ -52,6 +52,6 @@ export const removeVideoSegments = (baseName: string) => {
     }
 }
 
-export const createTimestampCopy = (timestampsFilename: string, outputFilename: string) => {
-    fs.copyFileSync(`${timestampsFilename}`, `${outputFilename}.txt`);
+export const createTimestampCopy = (outputFilename: string, content: string) => {
+    fs.writeFileSync(`${outputFilename}.txt`, `${content}`, {encoding: "utf-8"});
 };
