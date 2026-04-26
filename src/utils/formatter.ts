@@ -91,3 +91,5 @@ Note that small disparities are normal and you may continue if you have not foun
 export const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 
 export const greenText = (text: string) => `\x1b[32m${text}\x1b[0m`
+
+export const getSuggestedFilename = (filename: string) => `Try renaming your filename to [${greenText(filename)}] instead.`
