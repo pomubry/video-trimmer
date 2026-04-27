@@ -28,4 +28,5 @@ export const APP_OPTIONS = {
     KEEP_VIDEO_SEGMENTS: true,
     BATCH_SEPARATOR: "@batch@",
     KEEP_TIMESTAMP_COPY: true,
+    AUTO_RENAME: false
 }

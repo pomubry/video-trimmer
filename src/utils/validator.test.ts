@@ -1,7 +1,9 @@
 import {describe, expect, test, vi} from "vitest";
+import {fs} from "memfs";
 
 import {checkFileExtension, checkVideoDurationErrors, checkVideoFilename} from "./validator.js";
 import {getVideoDuration} from "../services/childProcess.js";
+import {APP_OPTIONS} from "../config.js";
 
 describe("checkFileExtension", () => {
     test("Should throw with invalid input", () => {
@@ -43,6 +45,19 @@ describe("checkVideoFilename", () => {
         expect(() => checkVideoFilename("inputShouldHaveNo,.mp4")).toThrow();
         expect(() => checkVideoFilename("inputShouldHaveNo<>.mp4")).toThrow();
         expect(() => checkVideoFilename("inputShouldHaveNo?.mp4")).toThrow();
+    })
+
+    test("should auto rename the file based on config", () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
+        const oldFilename = "my! invalid@input$.mp4"
+        const newFilename = "my_ invalid_input_.mp4"
+        fs.writeFileSync(oldFilename, "random");
+
+        checkVideoFilename(oldFilename);
+
+        const dir = fs.readdirSync(".")
+        expect(dir).toContain(newFilename)
+        expect(dir).not.toContain(oldFilename)
     })
 
     test("should throw with a suggested filename", () => {

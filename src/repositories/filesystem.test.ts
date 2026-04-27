@@ -9,7 +9,8 @@ import {
     readTimestamps,
     removeOutputIfExists,
     removeSegmentList,
-    removeVideoSegments
+    removeVideoSegments,
+    renameFile
 } from "./filesystem.js";
 import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
@@ -167,5 +168,18 @@ describe("createTimestampCopy", () => {
         createTimestampCopy(baseName, randomText);
 
         expect(fs.readdirSync(".")).toContain(baseName + ".txt")
+    })
+})
+
+describe("renameFile", () => {
+    test("Should rename a file", () => {
+        const oldName = "oldName.txt"
+        const newName = "newName.txt"
+        fs.writeFileSync(oldName, randomText)
+
+        renameFile(oldName, newName);
+
+        const res = fs.readFileSync(newName, {encoding: "utf-8"});
+        expect(res).toBe(randomText)
     })
 })

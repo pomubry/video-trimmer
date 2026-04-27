@@ -1,10 +1,10 @@
 import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
-import {checkVideoFile} from "../repositories/filesystem.js";
-import {errorMsgFormatter, getSuggestedFilename, greenText, specialCharsRegex} from "./formatter.js";
+import {checkVideoFile, renameFile} from "../repositories/filesystem.js";
+import {errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
-import {FILENAME_OPTIONS} from "../config.js";
+import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 export const checkFileExtension = (videoFile: string) => {
     const extensionName = path.extname(videoFile).toLowerCase().slice(1);
@@ -24,6 +24,12 @@ export const checkVideoFilename = (videoFilename: string) => {
 
     if (isInvalidFilename) {
         const newFilename = videoFilename.replace(specialCharsRegex, "_");
+
+        if (APP_OPTIONS.AUTO_RENAME) {
+            renameFile(videoFilename, newFilename);
+            return;
+        }
+
         throw new Error(
             errorMsgFormatter(`The video filename should not contain any special characters.
 ${getSuggestedFilename(newFilename)}`)

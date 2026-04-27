@@ -75,7 +75,8 @@ var APP_OPTIONS = {
   IGNORE_ERRORS: true,
   KEEP_VIDEO_SEGMENTS: true,
   BATCH_SEPARATOR: "@batch@",
-  KEEP_TIMESTAMP_COPY: true
+  KEEP_TIMESTAMP_COPY: true,
+  AUTO_RENAME: false
 };
 
 // src/utils/timestamp.ts
@@ -275,6 +276,7 @@ var removeVideoSegments = (baseName) => {
 var createTimestampCopy = (outputFilename, content) => {
   import_node_fs.default.writeFileSync(`${outputFilename}.txt`, `${content}`, { encoding: "utf-8" });
 };
+var renameFile = (oldFilename, newFilename) => import_node_fs.default.renameSync(oldFilename, newFilename);
 
 // src/utils/validator.ts
 var import_node_path4 = __toESM(require("node:path"), 1);
@@ -293,6 +295,10 @@ var checkVideoFilename = (videoFilename) => {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
   if (isInvalidFilename) {
     const newFilename = videoFilename.replace(specialCharsRegex, "_");
+    if (APP_OPTIONS.AUTO_RENAME) {
+      renameFile(videoFilename, newFilename);
+      return;
+    }
     throw new Error(
       errorMsgFormatter(`The video filename should not contain any special characters.
 ${getSuggestedFilename(newFilename)}`)

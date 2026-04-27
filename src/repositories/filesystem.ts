@@ -55,3 +55,5 @@ export const removeVideoSegments = (baseName: string) => {
 export const createTimestampCopy = (outputFilename: string, content: string) => {
     fs.writeFileSync(`${outputFilename}.txt`, `${content}`, {encoding: "utf-8"});
 };
+
+export const renameFile = (oldFilename: string, newFilename: string) => fs.renameSync(oldFilename, newFilename)
