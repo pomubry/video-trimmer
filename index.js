@@ -167,6 +167,10 @@ Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
 var getTimestampArray = (timestamp, separator) => timestamp.split(separator).map((ts) => ts.trim()).filter(Boolean);
 
 // src/utils/formatter.ts
+var redText = (text) => `\x1B[31m${text}\x1B[0m`;
+var greenText = (text) => `\x1B[32m${text}\x1B[0m`;
+var blueText = (text) => `\x1B[94m${text}\x1B[0m`;
+var purpleText = (text) => `\x1B[35m${text}\x1B[0m`;
 var sexagesimalFormat = (durationInSeconds) => {
   let hour = Math.floor(durationInSeconds / 3600);
   let minute = Math.floor(durationInSeconds % 3600 / 60);
@@ -229,7 +233,6 @@ ${possibleErrors.map((err) => "	" + err).join("\n")}
 
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`;
 var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
-var greenText = (text) => `\x1B[32m${text}\x1B[0m`;
 var getSuggestedFilename = (filename) => `Try renaming your filename to [${greenText(filename)}] instead.`;
 
 // src/repositories/filesystem.ts
@@ -264,7 +267,7 @@ var removeSegmentList = () => {
 var removeOutputIfExists = (outputFile) => {
   if (import_node_fs.default.readdirSync(".").includes(outputFile)) {
     console.log(`
-The file [\x1B[94m${outputFile}\x1B[0m] already exists. Removing file before making a new one. . .`);
+The file [${blueText(outputFile)}] already exists. Removing file before making a new one. . .`);
     import_node_fs.default.rmSync(outputFile);
   }
 };
@@ -316,7 +319,10 @@ var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName) 
   const isGreaterThanOne = Number(difference) > 1;
   console.log(
     `
-[\x1B[94m${file}\x1B[0m] Duration: Computed (${videoSegmentDurations[index]}) vs Actual (${durationInSeconds}). Difference: ${difference} seconds.${isGreaterThanOne ? "\x1B[31m Possible Error!\x1B[0m" : "\x1B[32m Result Okay!\x1B[0m"}`
+[${blueText(file)}] Duration: 
+    - Computed: ${videoSegmentDurations[index]} seconds
+    - Actual: ${durationInSeconds} seconds
+    - Difference: ${difference} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`
   );
   if (isGreaterThanOne) {
     return [...acc, file];
@@ -415,7 +421,7 @@ var init = () => {
 
 // src/index.ts
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
-  console.log("\x1B[35m%s\x1B[0m", `Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`);
+  console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`));
 }
 try {
   init();

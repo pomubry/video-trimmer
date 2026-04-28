@@ -42,7 +42,6 @@ const getArgs = (videoFilename: string) => {
     }
 }
 
-
 describe("init function", () => {
     beforeEach(() => {
         vi.spyOn(console, "log").mockImplementation(() => {

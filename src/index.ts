@@ -1,8 +1,9 @@
 import {init} from "./init/init.js";
+import {purpleText} from "./utils/formatter.js";
 import {FFMPEG_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
-    console.log("\x1b[35m%s\x1b[0m", `Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`);
+    console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`));
 }
 
 try {

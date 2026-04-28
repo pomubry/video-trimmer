@@ -6,6 +6,11 @@ import {FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
 
+export const redText = (text: string) => `\x1b[31m${text}\x1b[0m`
+export const greenText = (text: string) => `\x1b[32m${text}\x1b[0m`
+export const blueText = (text: string) => `\x1b[94m${text}\x1b[0m`
+export const purpleText = (text: string) => `\x1b[35m${text}\x1b[0m`
+
 export const sexagesimalFormat = (durationInSeconds: number) => {
     let hour = Math.floor(durationInSeconds / 3600);
     let minute = Math.floor((durationInSeconds % 3600) / 60);
@@ -89,7 +94,5 @@ ${possibleErrors.map(err => "\t" + err).join("\n")}
 Note that small disparities are normal and you may continue if you have not found an error in any video segments.`
 
 export const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
-
-export const greenText = (text: string) => `\x1b[32m${text}\x1b[0m`
 
 export const getSuggestedFilename = (filename: string) => `Try renaming your filename to [${greenText(filename)}] instead.`

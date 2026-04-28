@@ -2,7 +2,7 @@ import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
 import {checkVideoFile, renameFile} from "../repositories/filesystem.js";
-import {errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
+import {greenText, redText, blueText, errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
@@ -50,14 +50,13 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
         const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
         const isGreaterThanOne = Number(difference) > 1;
 
-        console.log(`\n[\x1b[94m${file}\x1b[0m] Duration: Computed (${(
-                videoSegmentDurations[index]
-            )}) vs Actual (${(
-                durationInSeconds
-            )}). Difference: ${difference} seconds.${
+        console.log(`\n[${blueText(file)}] Duration: 
+    - Computed: ${(videoSegmentDurations[index])} seconds
+    - Actual: ${(durationInSeconds)} seconds
+    - Difference: ${difference} seconds.${
                 isGreaterThanOne
-                    ? "\x1b[31m Possible Error!\x1b[0m"
-                    : "\x1b[32m Result Okay!\x1b[0m"
+                    ? redText(" Possible Error!")
+                    : greenText(" Result Okay!")
             }`
         );
 

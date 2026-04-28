@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {errorMsgFormatter} from "../utils/formatter.js";
+import {blueText, errorMsgFormatter} from "../utils/formatter.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 export const readTimestamps = () => {
@@ -41,7 +41,7 @@ export const removeSegmentList = () => {
 
 export const removeOutputIfExists = (outputFile: string) => {
     if (fs.readdirSync(".").includes(outputFile)) {
-        console.log(`\nThe file [\x1b[94m${outputFile}\x1b[0m] already exists. Removing file before making a new one. . .`);
+        console.log(`\nThe file [${blueText(outputFile)}] already exists. Removing file before making a new one. . .`);
         fs.rmSync(outputFile);
     }
 }
