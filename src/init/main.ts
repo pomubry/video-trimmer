@@ -11,16 +11,16 @@ import {
 import {
     createFFmpegScripts,
     getVideoSegmentRegExp,
-    greenText, listPossibleErrors,
+    greenText,
     outputFilenameFormatter,
     sexagesimalFormat
 } from "../utils/formatter.js";
-import {checkVideoDurationErrors} from "../utils/validator.js";
+import {checkFileSizeDiff, checkVideoDurationErrors} from "../utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {FFmpegArguments, MainArgs} from "../types/index.js";
 
-export const main = (args: MainArgs) => {
+export const main = (args: MainArgs, addError: (msg: string) => void) => {
     const {
         timestampPairs,
         totalTime,
@@ -56,15 +56,11 @@ export const main = (args: MainArgs) => {
         .filter((file) => videoSegmentRegExp.test(file));
 
     // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
-    const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
+    const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName, addError);
 
-    if (possibleErrors.length > 0) {
-        console.error(listPossibleErrors(possibleErrors));
-
-        if (!APP_OPTIONS.IGNORE_ERRORS) {
-            console.log("\nAbort merging of video segments. . .");
-            return;
-        }
+    if (possibleErrors.length > 0 && !APP_OPTIONS.IGNORE_ERRORS) {
+        console.log("\nAbort merging of video segments. . .");
+        return;
     }
 
     createSegmentList(videoSegments, baseName);
@@ -85,11 +81,13 @@ export const main = (args: MainArgs) => {
 
     APP_OPTIONS.KEEP_TIMESTAMP_COPY && createTimestampCopy(baseName, args.timestamp);
 
-    let sexagesimal = sexagesimalFormat(totalTime);
+    const sexagesimal = sexagesimalFormat(totalTime);
+    const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
 
     console.log(`
-Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+DONE! Video output should be about ${sexagesimal} long. 
 Total processing time: ${sexagesimalFormat(elapsedTime)}
+${fileSizeDiff}
 `
     );
 

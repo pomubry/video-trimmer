@@ -1,11 +1,13 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
+import * as fileSystem from "../repositories/filesystem.js";
+import * as validator from "../utils/validator.js";
 import {main} from "./main.js";
 import {readTimestamps} from "../repositories/filesystem.js";
 import {outputFilenameFormatter, sexagesimalFormat, videoCounter} from "../utils/formatter.js";
 import {getTimestampArray} from "../utils/timestamp.js";
-import * as validator from "../utils/validator.js";
+
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MainArgs} from "../types/index.js";
@@ -32,12 +34,15 @@ const argsInit: MainArgs = {
 describe("main function", () => {
     let args = {...argsInit};
     const otherFile = "other-file.txt"
+    const spy = vi.fn();
 
     beforeEach(() => {
-        vi.spyOn(console, "log").mockImplementation(() => {
-        })
-        vi.spyOn(console, "error").mockImplementation(() => {
-        })
+        vi.spyOn(console, "log").mockImplementation(vi.fn())
+        vi.spyOn(console, "error").mockImplementation(vi.fn())
+        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
+        vi.spyOn(fileSystem, "getFileSize")
+            .mockReturnValueOnce(50000)
+            .mockReturnValueOnce(10000)
 
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
         fs.writeFileSync(`${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`, "random");
@@ -56,8 +61,7 @@ describe("main function", () => {
     })
 
     test("should create expected files", async () => {
-        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
-        const spy = vi.spyOn(console, "log").mockImplementation(vi.fn())
+        const spyLog = vi.spyOn(console, "log").mockImplementation(vi.fn())
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
             outputFilenameFormatter(baseName),
@@ -66,7 +70,7 @@ describe("main function", () => {
             otherFile
         ]
 
-        main(args)
+        main(args, spy)
 
         const files = fs.readdirSync(".")
         const copiedData = fs.readFileSync(baseName + ".txt", "utf-8")
@@ -75,15 +79,15 @@ describe("main function", () => {
         expect(files).toEqual(expect.arrayContaining(expectedFiles))
 
         expect(copiedData).toBe(timestampText)
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/merging video segments/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(/has been created/i))
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(
+        expect(spyLog).toHaveBeenCalledWith(expect.stringMatching(/merging video segments/i))
+        expect(spyLog).toHaveBeenCalledWith(expect.stringMatching(/has been created/i))
+        expect(spyLog).toHaveBeenCalledWith(expect.stringMatching(
             new RegExp(`should be about ${totalTimeLogged}`, "i")
         ))
+        expect(spyLog).toHaveBeenCalledWith(expect.stringMatching(/saved .+\d+.+ mb/i))
     })
 
     test("should not create timestamp copy", async () => {
-        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         vi.spyOn(APP_OPTIONS, "KEEP_TIMESTAMP_COPY", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -92,14 +96,13 @@ describe("main function", () => {
             otherFile
         ]
 
-        main(args)
+        main(args, spy)
 
         const files = fs.readdirSync(".")
         expect(files).toEqual(expect.arrayContaining(expectedFiles))
     })
 
     test("should remove video segment folder", async () => {
-        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -108,32 +111,21 @@ describe("main function", () => {
             otherFile
         ]
 
-        main(args)
+        main(args, spy)
 
         const files = fs.readdirSync(".")
         expect(files).toEqual(expect.arrayContaining(expectedFiles))
         expect(files).not.toContain(baseName)
     })
 
-    test("should log possible errors", async () => {
-        vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue(errorFile);
-        const errorSpy = vi.spyOn(console, "error");
-
-        main(args)
-
-        expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
-    })
-
     test("should abort merging videos", async () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue(errorFile);
         vi.spyOn(APP_OPTIONS, "IGNORE_ERRORS", "get").mockReturnValue(false);
         const logSpy = vi.spyOn(console, "log");
-        const errorSpy = vi.spyOn(console, "error");
 
-        main(args)
+        main(args, spy)
 
         expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/abort merging/i))
-        expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/possible errors/i))
 
         const dir = fs.readdirSync(".");
         expect(dir).not.toContain(outputFilenameFormatter(baseName))

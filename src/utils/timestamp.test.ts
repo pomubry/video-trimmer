@@ -74,7 +74,7 @@ describe("processTimestamps", () => {
 
         const spy = vi.spyOn(console, "error").mockImplementation(vi.fn())
 
-        expect(() => processTimestamps(input)).toThrowError(/timestamps errors/i);
+        expect(() => processTimestamps(input)).toThrowError(/timestamp errors/i);
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/invalid timestamp format at line 3/i))
 
     })
@@ -89,7 +89,7 @@ describe("processTimestamps", () => {
 
         const spy = vi.spyOn(console, "error").mockImplementation(vi.fn())
 
-        expect(() => processTimestamps(input)).toThrowError(/timestamps errors/i);
+        expect(() => processTimestamps(input)).toThrowError(/timestamp errors/i);
         expect(spy).toHaveBeenCalledOnce();
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/timestamp duration error at line 3/i))
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/Timestamp \[00:04:00.000] should be greater than \[00:05:00.000]/i))
@@ -105,7 +105,7 @@ describe("processTimestamps", () => {
 
         const spy = vi.spyOn(console, "error").mockImplementation(vi.fn())
 
-        expect(() => processTimestamps(input)).toThrowError(/timestamps errors/i);
+        expect(() => processTimestamps(input)).toThrowError(/timestamp errors/i);
         expect(spy).toHaveBeenCalledOnce();
         expect(spy).toHaveBeenCalledWith(expect.stringMatching(/(?=.*duplicate)(?=.*line 3 and line 4)/i))
     })

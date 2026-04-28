@@ -57,3 +57,5 @@ export const createTimestampCopy = (outputFilename: string, content: string) => 
 };
 
 export const renameFile = (oldFilename: string, newFilename: string) => fs.renameSync(oldFilename, newFilename)
+
+export const getFileSize = (filename: string) => fs.statSync(filename).size

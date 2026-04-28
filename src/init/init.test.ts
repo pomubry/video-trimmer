@@ -2,6 +2,8 @@ import {beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import * as main from "./main.js";
+import * as childProcess from "../services/childProcess.js";
+import * as filesystem from "../repositories/filesystem.js";
 import {init} from "./init.js";
 import {FILENAME_OPTIONS} from "../config.js";
 
@@ -51,8 +53,7 @@ describe("init function", () => {
     })
 
     test("should do single operation", async () => {
-        const spyMain = vi.spyOn(main, "main").mockImplementation(() => {
-        });
+        const spyMain = vi.spyOn(main, "main").mockImplementation(vi.fn());
         const videoFilename = `${baseName}1.mp4`
         const expectedArgs = getArgs(videoFilename);
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {encoding: "utf-8"});
@@ -61,7 +62,7 @@ describe("init function", () => {
         init();
 
         expect(spyMain).toHaveBeenCalledTimes(1)
-        expect(spyMain).toHaveBeenCalledWith(expectedArgs);
+        expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
     })
 
     test("should do batch operation", async () => {
@@ -81,7 +82,7 @@ describe("init function", () => {
 
         expect(spyMain).toHaveBeenCalledTimes(3)
         args.forEach((arg, index) => {
-            expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg);
+            expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, expect.any(Function));
         })
     })
 
@@ -97,7 +98,7 @@ describe("init function", () => {
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
         fs.writeFileSync(videoFilename, "random");
 
-        expect(() => init()).toThrow();
+        expect(() => init()).toThrow(/timestamp errors/i);
     })
 
     test("should detect error in batch operation", async () => {
@@ -126,6 +127,33 @@ ${videoFilename}
         fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
         fs.writeFileSync(videoFilename, "random");
 
-        expect(() => init()).toThrow(/timestamps errors/i);
+        expect(() => init()).toThrow(/timestamp errors/i);
+    })
+
+    test("should log errors at the end", () => {
+        const spyError = vi.spyOn(console, "error");
+        const spyGetFileSize = vi.spyOn(filesystem, "getFileSize");
+        const spyGetVideoDuration = vi.spyOn(childProcess, "getVideoDuration")
+        const args = [
+            getArgs(`${baseName}1.mp4`),
+            getArgs(`${baseName}2.mp4`),
+            getArgs(`${baseName}3.mp4`)
+        ]
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, {encoding: "utf-8"});
+        args.forEach(arg => {
+            arg.timestampPairs.forEach((_, i) => {
+                let value = (i + 1) % 5 === 0 ? ((i + 1) * 60) - 5 : (i + 1) * 60
+                spyGetVideoDuration.mockReturnValueOnce(value)
+            })
+            spyGetFileSize
+                .mockReturnValueOnce(5000 * 5000)
+                .mockReturnValueOnce(2000 * 2000)
+            fs.writeFileSync(arg.videoFilename, "random");
+        })
+
+        init();
+
+        expect(spyError).toHaveBeenCalledTimes(3)
+        expect(spyError).toHaveBeenNthCalledWith(1, expect.stringMatching(/possible error/ig))
     })
 })

@@ -5,8 +5,11 @@ import {checkTimestampInput} from "../utils/validator.js";
 import {errorMsgFormatter} from "../utils/formatter.js";
 import {APP_OPTIONS} from "../config.js";
 
+import {EndLogError} from "../types/errors.js";
+
 export const init = () => {
     const ts = readTimestamps();
+    const errorLogger = new EndLogError()
 
     if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
         const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
@@ -24,16 +27,22 @@ export const init = () => {
                 )
 
             main({
-                timestamp: timestampBatch[i],
-                ...arg
-            })
+                    timestamp: timestampBatch[i],
+                    ...arg
+                },
+                errorLogger.addError)
         })
     } else {
         const timestampArr = getTimestampArray(ts, "\n");
         const args = checkTimestampInput(timestampArr);
-        main({
-            timestamp: ts,
-            ...args
-        })
+        main(
+            {
+                timestamp: ts,
+                ...args
+            },
+            errorLogger.addError
+        )
     }
+
+    errorLogger.logErrors();
 }

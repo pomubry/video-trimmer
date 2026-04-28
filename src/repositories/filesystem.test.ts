@@ -2,6 +2,7 @@ import path from "node:path";
 import {vi, describe, test, beforeEach, expect} from 'vitest'
 import {fs} from "memfs";
 
+import * as fileSystem from "./filesystem.js";
 import {
     checkVideoFile,
     createSegmentList,
@@ -13,8 +14,10 @@ import {
     renameFile
 } from "./filesystem.js";
 import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
+import {checkFileSizeDiff} from "../utils/validator.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
+import {EndLogError} from "../types/errors.js";
 
 const baseName = "input"
 const videoSegments = new Array(3)
@@ -181,5 +184,34 @@ describe("renameFile", () => {
 
         const res = fs.readFileSync(newName, {encoding: "utf-8"});
         expect(res).toBe(randomText)
+    })
+})
+
+describe("getFileSizeDiff", () => {
+    test("should return the amount of storage saved in MB", () => {
+        const spy = vi.fn()
+        const oldSize = 50000;
+        const newSize = 10000;
+        vi.spyOn(fileSystem, "getFileSize")
+            .mockReturnValueOnce(oldSize)
+            .mockReturnValueOnce(newSize)
+
+        const res = checkFileSizeDiff("a", "b", spy)
+
+        expect(res).toMatch(/saved .+\d+.+ mb/i)
+        expect(spy).toHaveBeenCalledTimes(0)
+    })
+
+    test(`should add an error to ${EndLogError.name}`, () => {
+        const spy = vi.fn()
+        vi.spyOn(fileSystem, "getFileSize")
+            .mockReturnValueOnce(10000)
+            .mockReturnValueOnce(50000)
+        const expectedRegex = /bigger than the original/ig
+
+        const res = checkFileSizeDiff("a", "b", spy)
+
+        expect(res).toMatch(expectedRegex)
+        expect(spy).toHaveBeenCalledWith(expect.stringMatching(expectedRegex))
     })
 })

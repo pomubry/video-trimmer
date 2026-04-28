@@ -160,7 +160,7 @@ Invalid timestamp format at line ${idx + 1}: [${timestamp}].`);
     }
   }, []);
   if (tsError) throw new Error(
-    errorMsgFormatter("Timestamps errors were found.")
+    errorMsgFormatter("Timestamp errors were found.")
   );
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 };
@@ -211,7 +211,7 @@ var createFFmpegScripts = ({ input, timestampPairs, videoSegments }, { FPS, HEVC
       `-ss ${ts[0]}`,
       `-to ${ts[1]}`,
       `-i "${input}"`,
-      `${HEVC ? `-crf 23 -c:v ${encoder} -tag:v hvc1` : "-crf 18 -c:v h264"}`,
+      `${HEVC ? `-x265-params log-level=error -crf 23 -c:v ${encoder} -tag:v hvc1` : "-crf 18 -c:v h264"}`,
       `${FPS === 0 ? "" : `-r ${FPS}`}`,
       `"${import_node_path2.default.join(basename, outputFilename)}"`
     ];
@@ -226,12 +226,6 @@ var outputFilenameFormatter = (basename) => `${basename} (Result).${FILENAME_OPT
 var errorMsgFormatter = (message) => `
 ${message}
 `;
-var listPossibleErrors = (possibleErrors) => `
-Please check the following files for possible errors:
-
-${possibleErrors.map((err) => "	" + err).join("\n")}
-
-Note that small disparities are normal and you may continue if you have not found an error in any video segments.`;
 var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 var getSuggestedFilename = (filename) => `Try renaming your filename to [${greenText(filename)}] instead.`;
 
@@ -280,6 +274,7 @@ var createTimestampCopy = (outputFilename, content) => {
   import_node_fs.default.writeFileSync(`${outputFilename}.txt`, `${content}`, { encoding: "utf-8" });
 };
 var renameFile = (oldFilename, newFilename) => import_node_fs.default.renameSync(oldFilename, newFilename);
+var getFileSize = (filename) => import_node_fs.default.statSync(filename).size;
 
 // src/utils/validator.ts
 var import_node_path4 = __toESM(require("node:path"), 1);
@@ -308,7 +303,7 @@ ${getSuggestedFilename(newFilename)}`)
     );
   }
 };
-var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName) => videoSegments.reduce((acc, file, index) => {
+var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, addError) => videoSegments.reduce((acc, file, index) => {
   const durationInSeconds = getVideoDuration(baseName, file);
   if (videoSegmentDurations[index] === void 0) {
     throw new Error(
@@ -317,14 +312,14 @@ var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName) 
   }
   const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
   const isGreaterThanOne = Number(difference) > 1;
-  console.log(
-    `
+  const message = `
 [${blueText(file)}] Duration: 
     - Computed: ${videoSegmentDurations[index]} seconds
     - Actual: ${durationInSeconds} seconds
-    - Difference: ${difference} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`
-  );
+    - Difference: ${difference} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`;
+  console.log(message);
   if (isGreaterThanOne) {
+    addError(message);
     return [...acc, file];
   }
   return acc;
@@ -336,9 +331,23 @@ var checkTimestampInput = (timestampArr) => {
   checkVideoFile(res.videoFilename);
   return res;
 };
+var checkFileSizeDiff = (oldFile, newFile, addError) => {
+  const oldSize = getFileSize(oldFile);
+  const newSize = getFileSize(newFile);
+  const diffInMB = (oldSize - newSize) / (1024 * 1024);
+  if (diffInMB >= 0) {
+    return `Saved ${greenText(diffInMB.toFixed(3))} MB`;
+  } else {
+    const message = `
+File [${blueText(newFile)}]:
+    New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`;
+    addError(message);
+    return message;
+  }
+};
 
 // src/init/main.ts
-var main = (args) => {
+var main = (args, addError) => {
   const {
     timestampPairs,
     totalTime,
@@ -363,13 +372,10 @@ var main = (args) => {
   const elapsedTime = (Date.now() - time1) / 1e3;
   const videoSegmentRegExp = getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
   videoSegments = import_fs.default.readdirSync(baseName).filter((file) => videoSegmentRegExp.test(file));
-  const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
-  if (possibleErrors.length > 0) {
-    console.error(listPossibleErrors(possibleErrors));
-    if (!APP_OPTIONS.IGNORE_ERRORS) {
-      console.log("\nAbort merging of video segments. . .");
-      return;
-    }
+  const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName, addError);
+  if (possibleErrors.length > 0 && !APP_OPTIONS.IGNORE_ERRORS) {
+    console.log("\nAbort merging of video segments. . .");
+    return;
   }
   createSegmentList(videoSegments, baseName);
   const outputFile = outputFilenameFormatter(baseName);
@@ -381,19 +387,38 @@ ${greenText(outputFile)} has been created.`);
   removeSegmentList();
   removeVideoSegments(baseName);
   APP_OPTIONS.KEEP_TIMESTAMP_COPY && createTimestampCopy(baseName, args.timestamp);
-  let sexagesimal = sexagesimalFormat(totalTime);
+  const sexagesimal = sexagesimalFormat(totalTime);
+  const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
   console.log(
     `
-Video trimmer has finished. Video output should be about ${sexagesimal} long. 
+DONE! Video output should be about ${sexagesimal} long. 
 Total processing time: ${sexagesimalFormat(elapsedTime)}
+${fileSizeDiff}
 `
   );
   console.log("=".repeat(process.stdout.columns));
 };
 
+// src/types/errors.ts
+var EndLogError = class extends Error {
+  #errors = [];
+  constructor() {
+    super();
+    this.name = this.constructor.name;
+    this.#errors = [];
+  }
+  addError = (error) => {
+    this.#errors.push(error);
+  };
+  logErrors = () => {
+    this.#errors.forEach((error) => console.error(error));
+  };
+};
+
 // src/init/init.ts
 var init = () => {
   const ts = readTimestamps();
+  const errorLogger = new EndLogError();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
     const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
     const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map(checkTimestampInput);
@@ -404,19 +429,26 @@ var init = () => {
             `Index ${i} of the timestamp batch is undefined.${timestampBatch}`
           )
         );
-      main({
-        timestamp: timestampBatch[i],
-        ...arg
-      });
+      main(
+        {
+          timestamp: timestampBatch[i],
+          ...arg
+        },
+        errorLogger.addError
+      );
     });
   } else {
     const timestampArr = getTimestampArray(ts, "\n");
     const args = checkTimestampInput(timestampArr);
-    main({
-      timestamp: ts,
-      ...args
-    });
+    main(
+      {
+        timestamp: ts,
+        ...args
+      },
+      errorLogger.addError
+    );
   }
+  errorLogger.logErrors();
 };
 
 // src/index.ts

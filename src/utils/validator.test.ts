@@ -69,6 +69,7 @@ describe("checkVideoFilename", () => {
 })
 
 describe("checkVideoDuration", () => {
+    const spy = vi.fn()
     const baseName = "randomVideo"
     const videoSegments = new Array(5)
         .fill(0)
@@ -79,7 +80,7 @@ describe("checkVideoDuration", () => {
         vi.mocked(getVideoDuration).mockReturnValue(0);
         vi.spyOn(console, "log").mockImplementation(vi.fn());
 
-        const possibleErrors = checkVideoDurationErrors(videoSegments, videoDuration, baseName);
+        const possibleErrors = checkVideoDurationErrors(videoSegments, videoDuration, baseName, spy);
 
         expect(possibleErrors.length).toBe(0);
     })
@@ -89,24 +90,24 @@ describe("checkVideoDuration", () => {
         vi.mocked(getVideoDuration).mockReturnValue(5);
         vi.spyOn(console, "log").mockImplementation(vi.fn());
 
-        const possibleErrors = checkVideoDurationErrors(videoSegments, videoDuration, baseName);
+        const possibleErrors = checkVideoDurationErrors(videoSegments, videoDuration, baseName, spy);
 
         expect(possibleErrors.length).toBe(2);
     })
 
     test("should log 3 okay and 2 errors", () => {
         const videoDuration = [1, 4, 5, 6, 10]
-        const spy = vi.spyOn(console, "log").mockImplementation(vi.fn());
+        const spyLog = vi.spyOn(console, "log").mockImplementation(vi.fn());
         const okayString = expect.stringMatching(/okay/i);
         const errorString = expect.stringMatching(/error/i);
         vi.mocked(getVideoDuration).mockReturnValue(5);
 
-        checkVideoDurationErrors(videoSegments, videoDuration, baseName);
+        checkVideoDurationErrors(videoSegments, videoDuration, baseName, spy);
 
-        expect(spy).toHaveBeenNthCalledWith(1, errorString)
-        expect(spy).toHaveBeenNthCalledWith(2, okayString)
-        expect(spy).toHaveBeenNthCalledWith(3, okayString)
-        expect(spy).toHaveBeenNthCalledWith(4, okayString)
-        expect(spy).toHaveBeenNthCalledWith(5, errorString)
+        expect(spyLog).toHaveBeenNthCalledWith(1, errorString)
+        expect(spyLog).toHaveBeenNthCalledWith(2, okayString)
+        expect(spyLog).toHaveBeenNthCalledWith(3, okayString)
+        expect(spyLog).toHaveBeenNthCalledWith(4, okayString)
+        expect(spyLog).toHaveBeenNthCalledWith(5, errorString)
     })
 })

@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
-import {checkVideoFile, renameFile} from "../repositories/filesystem.js";
+import {checkVideoFile, getFileSize, renameFile} from "../repositories/filesystem.js";
 import {greenText, redText, blueText, errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
@@ -37,7 +37,7 @@ ${getSuggestedFilename(newFilename)}`)
     }
 };
 
-export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDurations: number[], baseName: string) =>
+export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDurations: number[], baseName: string, addError: (msg: string) => void) =>
     videoSegments.reduce((acc, file, index) => {
         const durationInSeconds = getVideoDuration(baseName, file);
 
@@ -50,17 +50,20 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
         const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
         const isGreaterThanOne = Number(difference) > 1;
 
-        console.log(`\n[${blueText(file)}] Duration: 
+        const message = `
+[${blueText(file)}] Duration: 
     - Computed: ${(videoSegmentDurations[index])} seconds
     - Actual: ${(durationInSeconds)} seconds
     - Difference: ${difference} seconds.${
-                isGreaterThanOne
-                    ? redText(" Possible Error!")
-                    : greenText(" Result Okay!")
-            }`
-        );
+            isGreaterThanOne
+                ? redText(" Possible Error!")
+                : greenText(" Result Okay!")
+        }`
+
+        console.log(message);
 
         if (isGreaterThanOne) {
+            addError(message)
             return [...acc, file]
         }
 
@@ -75,4 +78,20 @@ export const checkTimestampInput = (timestampArr: string[]) => {
     checkVideoFile(res.videoFilename);
 
     return res
+}
+
+export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: (message: string) => void) => {
+    const oldSize = getFileSize(oldFile);
+    const newSize = getFileSize(newFile);
+    const diffInMB = ((oldSize - newSize) / (1024 * 1024));
+
+    if (diffInMB >= 0) {
+        return `Saved ${greenText(diffInMB.toFixed(3))} MB`
+    } else {
+        const message = `
+File [${blueText(newFile)}]:
+    New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`
+        addError(message)
+        return message
+    }
 }

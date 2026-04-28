@@ -117,7 +117,7 @@ Timestamp duration error at line ${idx + 1}:
     }, [] as string[][]);
 
     if (tsError) throw new Error(
-        formatter.errorMsgFormatter("Timestamps errors were found.")
+        formatter.errorMsgFormatter("Timestamp errors were found.")
     )
 
     return {timestampPairs, totalTime, videoSegmentDurations, videoFilename};
