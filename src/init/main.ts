@@ -1,0 +1,67 @@
+import fs from "fs";
+import path from "node:path";
+
+import {createVideoSegment} from "../services/childProcess.js";
+import {mergeVideos} from "../repositories/filesystem.js";
+import {checkVideoDurationErrors} from "../utils/validator.js";
+import * as formatter from "../utils/formatter.js";
+import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+
+import type {FFmpegArguments, MainArgs, MergeOptions} from "../types/index.js";
+
+export const main = (args: MainArgs) => {
+    const {
+        timestampPairs,
+        totalTime,
+        videoSegmentDurations,
+        videoFilename
+    } = args;
+
+    const baseName = path.parse(videoFilename).name;
+    fs.mkdirSync(baseName, {recursive: true});
+
+    let videoSegments = fs.readdirSync(baseName);
+    const ffmpegArgs: FFmpegArguments = {
+        input: videoFilename,
+        timestampPairs,
+        videoSegments
+    }
+    const ffmpegScripts: string[] = formatter.createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
+
+    console.log("\nExecuting FFmpeg. This may take a while. . .");
+
+    const time1 = Date.now();
+    ffmpegScripts.forEach((script) => {
+        console.log("\n" + script);
+        createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
+    });
+    const elapsedTime = Date.now() - time1;
+
+    // List the files in the current directory again and filter it with video files of the format 'fileName_XYZ.extensionName'
+    // where XYZ is the number of the video, i.e., fileName_001.mp4.
+    const videoSegmentRegExp = formatter.getVideoSegmentRegExp(baseName, FILENAME_OPTIONS.EXTENSION_NAME);
+    videoSegments = fs
+        .readdirSync(baseName)
+        .filter((file) => videoSegmentRegExp.test(file));
+
+    // Check the duration of each video segment and if the computed duration is almost equal to the actual duration.
+    const possibleErrors = checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName);
+
+    if (possibleErrors.length > 0) {
+        console.error(formatter.listPossibleErrors(possibleErrors));
+
+        if (!APP_OPTIONS.IGNORE_ERRORS) {
+            console.log("\nAbort merging of video segments. . .");
+            return;
+        }
+    }
+
+    const mergeVideosArgs: MergeOptions = {
+        videoSegments,
+        basename: baseName,
+        videoDuration: totalTime,
+        elapsedTime,
+    }
+
+    mergeVideos(mergeVideosArgs);
+};
