@@ -67,7 +67,7 @@ export const createFFmpegScripts = (
             `-ss ${ts[0]}`,
             `-to ${ts[1]}`,
             `-i "${input}"`,
-            `${HEVC ? `-crf 23 -c:v ${encoder} -tag:v hvc1` : "-crf 18 -c:v h264"}`,
+            `${HEVC ? `-x265-params log-level=error -crf 23 -c:v ${encoder} -tag:v hvc1` : "-crf 18 -c:v h264"}`,
             `${FPS === 0 ? "" : `-r ${FPS}`}`,
             `"${path.join(basename, outputFilename)}"`
         ];
