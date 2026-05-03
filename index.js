@@ -29,23 +29,6 @@ var import_node_path5 = __toESM(require("node:path"), 1);
 // src/services/childProcess.ts
 var import_node_path = __toESM(require("node:path"), 1);
 var import_node_child_process = require("node:child_process");
-var createVideoSegment = (script, execSyncOptions) => (0, import_node_child_process.execSync)(script, execSyncOptions);
-var mergeVideoSegments = (segmentListFilename, outputFilename, execSyncOptions) => {
-  (0, import_node_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFilename}"`, execSyncOptions);
-};
-var getVideoDuration = (baseOutputPath, file) => Number(
-  (0, import_node_child_process.execSync)(
-    `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${import_node_path.default.join(baseOutputPath, file)}"`
-  ).toString()
-);
-
-// src/repositories/filesystem.ts
-var import_node_fs = __toESM(require("node:fs"), 1);
-var import_node_path3 = __toESM(require("node:path"), 1);
-
-// src/utils/formatter.ts
-var import_node_path2 = __toESM(require("node:path"), 1);
-var import_node_os = __toESM(require("node:os"), 1);
 
 // src/config.ts
 var FFMPEG_OPTIONS = {
@@ -76,8 +59,39 @@ var APP_OPTIONS = {
   KEEP_VIDEO_SEGMENTS: true,
   BATCH_SEPARATOR: "@batch@",
   KEEP_TIMESTAMP_COPY: true,
-  AUTO_RENAME: false
+  AUTO_RENAME: false,
+  AUTO_SUSPEND: false
 };
+
+// src/services/childProcess.ts
+var createVideoSegment = (script, execSyncOptions) => (0, import_node_child_process.execSync)(script, execSyncOptions);
+var mergeVideoSegments = (segmentListFilename, outputFilename, execSyncOptions) => {
+  (0, import_node_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFilename}"`, execSyncOptions);
+};
+var getVideoDuration = (baseOutputPath, file) => Number(
+  (0, import_node_child_process.execSync)(
+    `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${import_node_path.default.join(baseOutputPath, file)}"`
+  ).toString()
+);
+var suspendSystem = () => {
+  if (APP_OPTIONS.AUTO_SUSPEND) {
+    switch (process.platform) {
+      case "linux":
+        (0, import_node_child_process.execSync)("systemctl suspend");
+        break;
+      default:
+        break;
+    }
+  }
+};
+
+// src/repositories/filesystem.ts
+var import_node_fs = __toESM(require("node:fs"), 1);
+var import_node_path3 = __toESM(require("node:path"), 1);
+
+// src/utils/formatter.ts
+var import_node_path2 = __toESM(require("node:path"), 1);
+var import_node_os = __toESM(require("node:os"), 1);
 
 // src/utils/timestamp.ts
 var timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}";
@@ -449,6 +463,7 @@ var init = () => {
     );
   }
   errorLogger.logErrors();
+  suspendSystem();
 };
 
 // src/index.ts
