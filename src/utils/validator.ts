@@ -47,14 +47,14 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
             )
         }
 
-        const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
+        const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
         const isGreaterThanOne = Number(difference) > 1;
 
         const message = `
 [${blueText(file)}] Duration: 
-    - Computed: ${(videoSegmentDurations[index])} seconds
-    - Actual: ${(durationInSeconds)} seconds
-    - Difference: ${difference} seconds.${
+    - Computed: ${(videoSegmentDurations[index]).toFixed(3)} seconds
+    - Actual: ${(durationInSeconds).toFixed(3)} seconds
+    - Difference: ${difference.toFixed(3)} seconds.${
             isGreaterThanOne
                 ? redText(" Possible Error!")
                 : greenText(" Result Okay!")
