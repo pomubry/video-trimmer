@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, test, vi} from "vitest";
+import {beforeEach, describe, expect, type MockInstance, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import * as main from "./main.js";
@@ -45,11 +45,13 @@ const getArgs = (videoFilename: string) => {
 }
 
 describe("init function", () => {
+    let spySuspend: MockInstance;
     beforeEach(() => {
         vi.spyOn(console, "log").mockImplementation(() => {
         })
         vi.spyOn(console, "error").mockImplementation(() => {
         })
+        spySuspend = vi.spyOn(childProcess, "suspendSystem");
     })
 
     test("should do single operation", async () => {
@@ -63,6 +65,7 @@ describe("init function", () => {
 
         expect(spyMain).toHaveBeenCalledTimes(1)
         expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
+        expect(spySuspend).toBeCalledTimes(1);
     })
 
     test("should do batch operation", async () => {
@@ -84,9 +87,10 @@ describe("init function", () => {
         args.forEach((arg, index) => {
             expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, expect.any(Function));
         })
+        expect(spySuspend).toBeCalledTimes(1);
     })
 
-    test("should detect error in single operation", async () => {
+    test("should throw error in single operation", async () => {
         const videoFilename = `${baseName}1.mp4`
         const timestampWithError = `${videoFilename}
 00:00:00.000 00:01:00.000
@@ -99,9 +103,10 @@ describe("init function", () => {
         fs.writeFileSync(videoFilename, "random");
 
         expect(() => init()).toThrow(/timestamp errors/i);
+        expect(spySuspend).toBeCalledTimes(0);
     })
 
-    test("should detect error in batch operation", async () => {
+    test("should throw error in batch operation", async () => {
         const videoFilename = `${baseName}.mp4`
         const timestampWithError = `${videoFilename}
 00:00:00.000 00:01:00.000
@@ -128,12 +133,14 @@ ${videoFilename}
         fs.writeFileSync(videoFilename, "random");
 
         expect(() => init()).toThrow(/timestamp errors/i);
+        expect(spySuspend).toBeCalledTimes(0)
     })
 
     test("should log errors at the end", () => {
         const spyError = vi.spyOn(console, "error");
         const spyGetFileSize = vi.spyOn(filesystem, "getFileSize");
         const spyGetVideoDuration = vi.spyOn(childProcess, "getVideoDuration")
+        const spySuspend = vi.spyOn(childProcess, "suspendSystem");
         const args = [
             getArgs(`${baseName}1.mp4`),
             getArgs(`${baseName}2.mp4`),
@@ -155,5 +162,6 @@ ${videoFilename}
 
         expect(spyError).toHaveBeenCalledTimes(3)
         expect(spyError).toHaveBeenNthCalledWith(1, expect.stringMatching(/possible error/ig))
+        expect(spySuspend).toBeCalledTimes(1);
     })
 })

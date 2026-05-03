@@ -1,6 +1,7 @@
 import path from "node:path";
 import {execSync} from "node:child_process";
 
+import {APP_OPTIONS} from "../config.js";
 import type {ExecSyncOptions} from "node:child_process";
 
 export const createVideoSegment = (script: string, execSyncOptions: ExecSyncOptions) => execSync(script, execSyncOptions);
@@ -14,3 +15,15 @@ export const getVideoDuration = (baseOutputPath: string, file: string) => Number
         `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${path.join(baseOutputPath, file)}"`
     ).toString()
 )
+
+export const suspendSystem = () => {
+    if (APP_OPTIONS.AUTO_SUSPEND) {
+        switch (process.platform) {
+            case "linux":
+                execSync("systemctl suspend");
+                break;
+            default:
+                break;
+        }
+    }
+}

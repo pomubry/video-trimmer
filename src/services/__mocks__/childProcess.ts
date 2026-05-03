@@ -22,3 +22,5 @@ export const getVideoDuration = vi.fn(
     (_baseOutputPath: string, _file: string) => {
         throw new Error(`Mock return value for "getVideoDuration" is not implemented.`)
     })
+
+export const suspendSystem = () => vi.fn();
