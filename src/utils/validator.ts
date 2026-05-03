@@ -23,7 +23,7 @@ export const checkVideoFilename = (videoFilename: string) => {
     const isInvalidFilename = specialCharsRegex.test(videoFilename)
 
     if (isInvalidFilename) {
-        const newFilename = videoFilename.replace(specialCharsRegex, "_");
+        const newFilename = videoFilename.replace(specialCharsRegex, "");
 
         if (APP_OPTIONS.AUTO_RENAME) {
             renameFile(videoFilename, newFilename);

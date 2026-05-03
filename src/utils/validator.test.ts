@@ -50,7 +50,7 @@ describe("checkVideoFilename", () => {
     test("should auto rename the file based on config", () => {
         vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
         const oldFilename = "my! invalid@input$.mp4"
-        const newFilename = "my_ invalid_input_.mp4"
+        const newFilename = "my invalidinput.mp4"
         fs.writeFileSync(oldFilename, "random");
 
         checkVideoFilename(oldFilename);
@@ -62,7 +62,7 @@ describe("checkVideoFilename", () => {
 
     test("should throw with a suggested filename", () => {
         const filename = "my! invalid@input$.mp4"
-        const expectedFilename = "my_ invalid_input_.mp4"
+        const expectedFilename = "my invalidinput.mp4"
 
         expect(() => checkVideoFilename(filename)).toThrow(expectedFilename)
     })

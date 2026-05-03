@@ -306,7 +306,7 @@ Only the following extensions are valid:
 var checkVideoFilename = (videoFilename) => {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
   if (isInvalidFilename) {
-    const newFilename = videoFilename.replace(specialCharsRegex, "_");
+    const newFilename = videoFilename.replace(specialCharsRegex, "");
     if (APP_OPTIONS.AUTO_RENAME) {
       renameFile(videoFilename, newFilename);
       return;
@@ -324,13 +324,13 @@ var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, 
       errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
     );
   }
-  const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds).toFixed(4);
+  const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
   const isGreaterThanOne = Number(difference) > 1;
   const message = `
 [${blueText(file)}] Duration: 
-    - Computed: ${videoSegmentDurations[index]} seconds
-    - Actual: ${durationInSeconds} seconds
-    - Difference: ${difference} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`;
+    - Computed: ${videoSegmentDurations[index].toFixed(3)} seconds
+    - Actual: ${durationInSeconds.toFixed(3)} seconds
+    - Difference: ${difference.toFixed(3)} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`;
   console.log(message);
   if (isGreaterThanOne) {
     addError(message);
