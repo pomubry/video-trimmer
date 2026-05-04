@@ -177,10 +177,11 @@ describe("createTimestampCopy", () => {
 describe("renameFile", () => {
     test("Should rename a file", () => {
         const oldName = "oldName.txt"
+        const timestampArr = [oldName]
         const newName = "newName.txt"
         fs.writeFileSync(oldName, randomText)
 
-        renameFile(oldName, newName);
+        renameFile(timestampArr, newName);
 
         const res = fs.readFileSync(newName, {encoding: "utf-8"});
         expect(res).toBe(randomText)

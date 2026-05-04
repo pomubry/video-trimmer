@@ -56,6 +56,11 @@ export const createTimestampCopy = (outputFilename: string, content: string) => 
     fs.writeFileSync(`${outputFilename}.txt`, `${content}`, {encoding: "utf-8"});
 };
 
-export const renameFile = (oldFilename: string, newFilename: string) => fs.renameSync(oldFilename, newFilename)
+export const renameFile = (timestampArr: string[], newFilename: string) => {
+    if (timestampArr[0] === undefined) throw new Error("Renaming file failed because of empty timestamp.");
+    if (timestampArr[0] === newFilename) return;
+
+    fs.renameSync(timestampArr[0], newFilename)
+}
 
 export const getFileSize = (filename: string) => fs.statSync(filename).size

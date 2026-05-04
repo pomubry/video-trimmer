@@ -5,7 +5,7 @@ import * as main from "./main.js";
 import * as childProcess from "../services/childProcess.js";
 import * as filesystem from "../repositories/filesystem.js";
 import {init} from "./init.js";
-import {FILENAME_OPTIONS} from "../config.js";
+import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 const baseName = "segment"
 
@@ -163,5 +163,24 @@ ${videoFilename}
         expect(spyError).toHaveBeenCalledTimes(3)
         expect(spyError).toHaveBeenNthCalledWith(1, expect.stringMatching(/possible error/ig))
         expect(spySuspend).toBeCalledTimes(1);
+    })
+
+    test("should rename video input and update timestamp", async () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
+        const spyMain = vi.spyOn(main, "main").mockImplementation(vi.fn());
+        const baseName = "video with invalid character!";
+        const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+        const newFile = baseName.slice(0, -1);
+        const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, getSingleTimestamp(baseFileName), {encoding: "utf-8"});
+        fs.writeFileSync(baseFileName, "random");
+        const expectedArgs = getArgs(newFileName);
+
+        init()
+
+        const dir = fs.readdirSync(".");
+        expect(spyMain).toHaveBeenCalledTimes(1)
+        expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
+        expect(dir).toContain(newFileName)
     })
 })

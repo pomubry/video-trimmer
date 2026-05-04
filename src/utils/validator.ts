@@ -1,10 +1,12 @@
 import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
-import {checkVideoFile, getFileSize, renameFile} from "../repositories/filesystem.js";
+import {checkVideoFile, getFileSize} from "../repositories/filesystem.js";
 import {greenText, redText, blueText, errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+
+import type {MainArgs} from "../types/index.js";
 
 export const checkFileExtension = (videoFile: string) => {
     const extensionName = path.extname(videoFile).toLowerCase().slice(1);
@@ -25,10 +27,7 @@ export const checkVideoFilename = (videoFilename: string) => {
     if (isInvalidFilename) {
         const newFilename = videoFilename.replace(specialCharsRegex, "");
 
-        if (APP_OPTIONS.AUTO_RENAME) {
-            renameFile(videoFilename, newFilename);
-            return;
-        }
+        if (APP_OPTIONS.AUTO_RENAME) return newFilename;
 
         throw new Error(
             errorMsgFormatter(`The video filename should not contain any special characters.
@@ -71,11 +70,20 @@ export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDu
     }, [] as string[]);
 
 export const checkTimestampInput = (timestampArr: string[]) => {
-    const res = processTimestamps(timestampArr);
+    const res: MainArgs = {
+        timestamp: "",
+        ...processTimestamps(timestampArr)
+    };
 
     checkFileExtension(res.videoFilename);
-    checkVideoFilename(res.videoFilename);
     checkVideoFile(res.videoFilename);
+
+    const newFilename = checkVideoFilename(res.videoFilename);
+    if (newFilename !== undefined)
+        res.videoFilename = newFilename;
+
+    const timestampPairs = res.timestampPairs.map((pair) => pair.join(" "));
+    res.timestamp = [newFilename || res.videoFilename, ...timestampPairs].join("\n");
 
     return res
 }

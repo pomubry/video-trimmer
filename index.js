@@ -287,7 +287,11 @@ var removeVideoSegments = (baseName) => {
 var createTimestampCopy = (outputFilename, content) => {
   import_node_fs.default.writeFileSync(`${outputFilename}.txt`, `${content}`, { encoding: "utf-8" });
 };
-var renameFile = (oldFilename, newFilename) => import_node_fs.default.renameSync(oldFilename, newFilename);
+var renameFile = (timestampArr, newFilename) => {
+  if (timestampArr[0] === void 0) throw new Error("Renaming file failed because of empty timestamp.");
+  if (timestampArr[0] === newFilename) return;
+  import_node_fs.default.renameSync(timestampArr[0], newFilename);
+};
 var getFileSize = (filename) => import_node_fs.default.statSync(filename).size;
 
 // src/utils/validator.ts
@@ -307,10 +311,7 @@ var checkVideoFilename = (videoFilename) => {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
   if (isInvalidFilename) {
     const newFilename = videoFilename.replace(specialCharsRegex, "");
-    if (APP_OPTIONS.AUTO_RENAME) {
-      renameFile(videoFilename, newFilename);
-      return;
-    }
+    if (APP_OPTIONS.AUTO_RENAME) return newFilename;
     throw new Error(
       errorMsgFormatter(`The video filename should not contain any special characters.
 ${getSuggestedFilename(newFilename)}`)
@@ -339,10 +340,17 @@ var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, 
   return acc;
 }, []);
 var checkTimestampInput = (timestampArr) => {
-  const res = processTimestamps(timestampArr);
+  const res = {
+    timestamp: "",
+    ...processTimestamps(timestampArr)
+  };
   checkFileExtension(res.videoFilename);
-  checkVideoFilename(res.videoFilename);
   checkVideoFile(res.videoFilename);
+  const newFilename = checkVideoFilename(res.videoFilename);
+  if (newFilename !== void 0)
+    res.videoFilename = newFilename;
+  const timestampPairs = res.timestampPairs.map((pair) => pair.join(" "));
+  res.timestamp = [newFilename || res.videoFilename, ...timestampPairs].join("\n");
   return res;
 };
 var checkFileSizeDiff = (oldFile, newFile, addError) => {
@@ -435,7 +443,11 @@ var init = () => {
   const errorLogger = new EndLogError();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
     const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
-    const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map(checkTimestampInput);
+    const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map((timestampArr) => {
+      const args = checkTimestampInput(timestampArr);
+      renameFile(timestampArr, args.videoFilename);
+      return args;
+    });
     mainArgs.forEach((arg, i) => {
       if (timestampBatch[i] === void 0)
         throw new Error(
@@ -443,24 +455,13 @@ var init = () => {
             `Index ${i} of the timestamp batch is undefined.${timestampBatch}`
           )
         );
-      main(
-        {
-          timestamp: timestampBatch[i],
-          ...arg
-        },
-        errorLogger.addError
-      );
+      main(arg, errorLogger.addError);
     });
   } else {
     const timestampArr = getTimestampArray(ts, "\n");
     const args = checkTimestampInput(timestampArr);
-    main(
-      {
-        timestamp: ts,
-        ...args
-      },
-      errorLogger.addError
-    );
+    renameFile(timestampArr, args.videoFilename);
+    main(args, errorLogger.addError);
   }
   errorLogger.logErrors();
   suspendSystem();

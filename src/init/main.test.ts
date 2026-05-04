@@ -51,7 +51,6 @@ describe("main function", () => {
         const ts = readTimestamps();
         const timestampArr = getTimestampArray(ts, "\n");
         args = {
-            timestamp: timestampText,
             ...validator.checkTimestampInput(timestampArr)
         };
     })

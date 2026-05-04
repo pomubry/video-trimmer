@@ -47,17 +47,15 @@ describe("checkVideoFilename", () => {
         expect(() => checkVideoFilename("inputShouldHaveNo?.mp4")).toThrow();
     })
 
-    test("should auto rename the file based on config", () => {
+    test("should return suggested filename based on config", () => {
         vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
         const oldFilename = "my! invalid@input$.mp4"
         const newFilename = "my invalidinput.mp4"
         fs.writeFileSync(oldFilename, "random");
 
-        checkVideoFilename(oldFilename);
+        const res = checkVideoFilename(oldFilename);
 
-        const dir = fs.readdirSync(".")
-        expect(dir).toContain(newFilename)
-        expect(dir).not.toContain(oldFilename)
+        expect(res).toBe(newFilename);
     })
 
     test("should throw with a suggested filename", () => {

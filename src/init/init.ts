@@ -1,5 +1,5 @@
 import {main} from "./main.js";
-import {readTimestamps} from "../repositories/filesystem.js";
+import {readTimestamps, renameFile} from "../repositories/filesystem.js";
 import {getTimestampArray} from "../utils/timestamp.js";
 import {checkTimestampInput} from "../utils/validator.js";
 import {errorMsgFormatter} from "../utils/formatter.js";
@@ -18,7 +18,11 @@ export const init = () => {
 
         const mainArgs = timestampBatch
             .map((ts) => getTimestampArray(ts, "\n"))
-            .map(checkTimestampInput)
+            .map(timestampArr => {
+                const args = checkTimestampInput(timestampArr);
+                renameFile(timestampArr, args.videoFilename)
+                return args
+            })
 
         mainArgs.forEach((arg, i) => {
             if (timestampBatch[i] === undefined)
@@ -28,22 +32,13 @@ export const init = () => {
                     )
                 )
 
-            main({
-                    timestamp: timestampBatch[i],
-                    ...arg
-                },
-                errorLogger.addError)
+            main(arg, errorLogger.addError)
         })
     } else {
         const timestampArr = getTimestampArray(ts, "\n");
         const args = checkTimestampInput(timestampArr);
-        main(
-            {
-                timestamp: ts,
-                ...args
-            },
-            errorLogger.addError
-        )
+        renameFile(timestampArr, args.videoFilename)
+        main(args, errorLogger.addError)
     }
 
     errorLogger.logErrors();
