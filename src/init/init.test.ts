@@ -102,6 +102,24 @@ describe("init function", () => {
             expect(() => init()).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0);
         })
+
+        test("should rename video input and update timestamp", async () => {
+            vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
+            const baseName = "video with invalid character!";
+            const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+            const newFile = baseName.slice(0, -1);
+            const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+            const expectedArgs = getArgs(newFileName);
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, createTimestamp(baseFileName, timestampPairs), {encoding: "utf-8"});
+            fs.writeFileSync(baseFileName, "random");
+
+            init()
+
+            const dir = fs.readdirSync(".");
+            expect(spyMain).toHaveBeenCalledTimes(1)
+            expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
+            expect(dir).toContain(newFileName)
+        })
     })
 
     describe("batch operation", () => {
@@ -170,24 +188,36 @@ describe("init function", () => {
             expect(() => init()).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0)
         })
-    })
 
-    test("should rename video input and update timestamp", async () => {
-        vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
-        const spyMain = vi.spyOn(main, "main").mockImplementation(vi.fn());
-        const baseName = "video with invalid character!";
-        const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        const newFile = baseName.slice(0, -1);
-        const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, getSingleTimestamp(baseFileName), {encoding: "utf-8"});
-        fs.writeFileSync(baseFileName, "random");
-        const expectedArgs = getArgs(newFileName);
+        test("should rename multiple video input and update timestamp", async () => {
+            vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
+            const input = [
+                "video1 with invalid character!",
+                "video2 with invalid character~",
+                "video3 with invalid character.",
+            ]
+            let batchTimestamp: string[] = [];
+            const expectedArgs = input.map((baseName, i) => {
+                const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+                const newFile = baseName.slice(0, i === 2 ? undefined : -1);
+                const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+                const timestamp = createTimestamp(baseFileName, timestampPairs);
+                batchTimestamp.push(timestamp);
+                fs.writeFileSync(baseFileName, "random");
 
-        init()
+                return getArgs(newFileName);
+            });
+            const batchTimestampText = batchTimestamp.join("\n@batch@\n");
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestampText, {encoding: "utf-8"});
 
-        const dir = fs.readdirSync(".");
-        expect(spyMain).toHaveBeenCalledTimes(1)
-        expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
-        expect(dir).toContain(newFileName)
+            init()
+
+            const dir = fs.readdirSync(".");
+            expect(spyMain).toHaveBeenCalledTimes(input.length)
+            expectedArgs.forEach((arg, index) => {
+                expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, expect.any(Function));
+                expect(dir).toContain(arg.videoFilename)
+            })
+        })
     })
 })
