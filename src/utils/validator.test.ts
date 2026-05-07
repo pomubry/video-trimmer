@@ -2,7 +2,7 @@ import {describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
 import {checkFileExtension, checkVideoDurationErrors, checkVideoFilename} from "./validator.js";
-import {getVideoDuration} from "../services/childProcess.js";
+import {getVideoDuration} from "../system/childProcess.js";
 import {APP_OPTIONS} from "../config.js";
 
 describe("checkFileExtension", () => {

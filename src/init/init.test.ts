@@ -2,8 +2,8 @@ import {beforeEach, describe, expect, type MockInstance, test, vi} from "vitest"
 import {fs} from "memfs";
 
 import * as main from "./main.js";
-import * as childProcess from "../services/childProcess.js";
-import * as filesystem from "../repositories/filesystem.js";
+import * as childProcess from "../system/childProcess.js";
+import * as filesystem from "../system/filesystem.js";
 import {init} from "./init.js";
 import {EndErrorLogger} from "../types/errors.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";

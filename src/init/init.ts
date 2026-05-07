@@ -1,9 +1,9 @@
 import {main} from "./main.js";
-import {readTimestamps, renameFile} from "../repositories/filesystem.js";
+import {readTimestamps, renameFile} from "../system/filesystem.js";
+import {suspendSystem} from "../system/childProcess.js";
 import {getTimestampArray} from "../utils/timestamp.js";
 import {checkTimestampInput} from "../utils/validator.js";
 import {errorMsgFormatter} from "../utils/formatter.js";
-import {suspendSystem} from "../services/childProcess.js";
 import {APP_OPTIONS} from "../config.js";
 
 import {EndErrorLogger} from "../types/errors.js";

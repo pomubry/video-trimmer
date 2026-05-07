@@ -1,13 +1,14 @@
 import fs from "fs";
 import path from "node:path";
 
-import {createVideoSegment, mergeVideoSegments} from "../services/childProcess.js";
+import {createVideoSegment, mergeVideoSegments} from "../system/childProcess.js";
 import {
     createSegmentList,
     createTimestampCopy,
-    removeOutputIfExists, removeSegmentList,
+    removeOutputIfExists,
+    removeSegmentList,
     removeVideoSegments
-} from "../repositories/filesystem.js";
+} from "../system/filesystem.js";
 import {
     createFFmpegScripts,
     getVideoSegmentRegExp,

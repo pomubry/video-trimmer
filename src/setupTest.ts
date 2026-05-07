@@ -3,7 +3,7 @@ import {vol} from "memfs";
 
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
-vi.mock(import("./services/childProcess.js"))
+vi.mock(import("./system/childProcess.js"))
 
 beforeEach(() => {
     vol.reset()

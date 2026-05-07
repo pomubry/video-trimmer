@@ -1,10 +1,10 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
 import {fs} from "memfs";
 
-import * as fileSystem from "../repositories/filesystem.js";
+import * as fileSystem from "../system/filesystem.js";
 import * as validator from "../utils/validator.js";
 import {main} from "./main.js";
-import {readTimestamps} from "../repositories/filesystem.js";
+import {readTimestamps} from "../system/filesystem.js";
 import {outputFilenameFormatter, sexagesimalFormat, videoCounter} from "../utils/formatter.js";
 import {getTimestampArray} from "../utils/timestamp.js";
 

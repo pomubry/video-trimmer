@@ -1,7 +1,7 @@
 import path from "node:path";
 
-import {getVideoDuration} from "../services/childProcess.js";
-import {checkVideoFile, getFileSize} from "../repositories/filesystem.js";
+import {getVideoDuration} from "../system/childProcess.js";
+import {checkVideoFile, getFileSize} from "../system/filesystem.js";
 import {
     greenText,
     redText,
@@ -111,7 +111,7 @@ export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: Ad
         const message = removeIndent(`
         File [${blueText(newFile)}]:
             New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`)
-        
+
         addError(message)
         return message
     }
