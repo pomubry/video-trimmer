@@ -15,9 +15,8 @@ import {
 } from "./filesystem.js";
 import {outputFilenameFormatter, removeIndent, videoCounter} from "../utils/formatter.js";
 import {checkFileSizeDiff} from "../utils/validator.js";
+import {EndErrorLogger} from "../utils/endErrorLogger.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
-
-import {EndErrorLogger} from "../types/errors.js";
 
 const baseName = "input"
 const videoSegments = new Array(3)

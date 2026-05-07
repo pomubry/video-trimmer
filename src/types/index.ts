@@ -1,5 +1,5 @@
 import type {ExecSyncOptions} from "node:child_process";
-import type {EndErrorLogger} from "./errors.js";
+import type {EndErrorLogger} from "../utils/endErrorLogger.js";
 
 export interface FFmpegArguments {
     input: string,

@@ -1,6 +1,6 @@
 import {init} from "./init/init.js";
 import {purpleText} from "./utils/formatter.js";
-import {endErrorLogger} from "./types/errors.js";
+import {endErrorLogger} from "./utils/endErrorLogger.js";
 import {FFMPEG_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {

@@ -6,7 +6,7 @@ import {checkTimestampInput} from "../utils/validator.js";
 import {errorMsgFormatter} from "../utils/formatter.js";
 import {APP_OPTIONS} from "../config.js";
 
-import {EndErrorLogger} from "../types/errors.js";
+import {EndErrorLogger} from "../utils/endErrorLogger.js";
 
 export const init = (endErrorLogger: EndErrorLogger) => {
     const ts = readTimestamps();
