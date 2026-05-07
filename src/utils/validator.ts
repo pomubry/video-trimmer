@@ -6,7 +6,7 @@ import {greenText, redText, blueText, errorMsgFormatter, getSuggestedFilename, s
 import {processTimestamps} from "./timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {MainArgs} from "../types/index.js";
+import type {MainArgs, AddError} from "../types/index.js";
 
 export const checkFileExtension = (videoFile: string) => {
     const extensionName = path.extname(videoFile).toLowerCase().slice(1);
@@ -36,7 +36,8 @@ ${getSuggestedFilename(newFilename)}`)
     }
 };
 
-export const checkVideoDurationErrors = (videoSegments: string[], videoSegmentDurations: number[], baseName: string, addError: (msg: string) => void) =>
+export const checkVideoDurationErrors
+    = (videoSegments: string[], videoSegmentDurations: number[], baseName: string, addError: AddError) =>
     videoSegments.reduce((acc, file, index) => {
         const durationInSeconds = getVideoDuration(baseName, file);
 
@@ -88,7 +89,7 @@ export const checkTimestampInput = (timestampArr: string[]) => {
     return res
 }
 
-export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: (message: string) => void) => {
+export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: AddError) => {
     const oldSize = getFileSize(oldFile);
     const newSize = getFileSize(newFile);
     const diffInMB = ((oldSize - newSize) / (1024 * 1024));

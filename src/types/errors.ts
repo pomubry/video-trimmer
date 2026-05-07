@@ -1,4 +1,4 @@
-export class EndLogError extends Error {
+export class EndErrorLogger extends Error {
     #errors: string[] = [];
 
     constructor() {
@@ -21,3 +21,5 @@ export class EndLogError extends Error {
         this.#errors.forEach(error => console.error(error));
     }
 }
+
+export const endErrorLogger = new EndErrorLogger();

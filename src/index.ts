@@ -1,5 +1,6 @@
 import {init} from "./init/init.js";
 import {purpleText} from "./utils/formatter.js";
+import {endErrorLogger} from "./types/errors.js";
 import {FFMPEG_OPTIONS} from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
@@ -7,7 +8,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 }
 
 try {
-    init()
+    init(endErrorLogger)
 } catch (e) {
     console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =

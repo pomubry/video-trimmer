@@ -18,9 +18,9 @@ import {
 import {checkFileSizeDiff, checkVideoDurationErrors} from "../utils/validator.js";
 import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import type {FFmpegArguments, MainArgs} from "../types/index.js";
+import type {MainArgs, AddError, FFmpegArguments} from "../types/index.js";
 
-export const main = (args: MainArgs, addError: (msg: string) => void) => {
+export const main = (args: MainArgs, addError: AddError) => {
     const {
         timestampPairs,
         totalTime,

@@ -1,4 +1,5 @@
 import type {ExecSyncOptions} from "node:child_process";
+import type {EndErrorLogger} from "./errors.js";
 
 export interface FFmpegArguments {
     input: string,
@@ -20,3 +21,5 @@ export interface FFmpegConfig {
     HEVC: boolean,
     EXEC_SYNC_OPTIONS: ExecSyncOptions
 }
+
+export type AddError = Pick<EndErrorLogger, "addError">["addError"]

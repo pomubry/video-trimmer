@@ -17,7 +17,7 @@ import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
 import {checkFileSizeDiff} from "../utils/validator.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
-import {EndLogError} from "../types/errors.js";
+import {EndErrorLogger} from "../types/errors.js";
 
 const baseName = "input"
 const videoSegments = new Array(3)
@@ -203,7 +203,7 @@ describe("getFileSizeDiff", () => {
         expect(spy).toHaveBeenCalledTimes(0)
     })
 
-    test(`should add an error to ${EndLogError.name}`, () => {
+    test(`should add an error to ${EndErrorLogger.name}`, () => {
         const spy = vi.fn()
         vi.spyOn(fileSystem, "getFileSize")
             .mockReturnValueOnce(10000)

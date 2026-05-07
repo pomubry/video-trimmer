@@ -4,14 +4,12 @@ import {getTimestampArray} from "../utils/timestamp.js";
 import {checkTimestampInput} from "../utils/validator.js";
 import {errorMsgFormatter} from "../utils/formatter.js";
 import {suspendSystem} from "../services/childProcess.js";
-
 import {APP_OPTIONS} from "../config.js";
 
-import {EndLogError} from "../types/errors.js";
+import {EndErrorLogger} from "../types/errors.js";
 
-export const init = () => {
+export const init = (endErrorLogger: EndErrorLogger) => {
     const ts = readTimestamps();
-    const errorLogger = new EndLogError()
 
     if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
         const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
@@ -32,15 +30,15 @@ export const init = () => {
                     )
                 )
 
-            main(arg, errorLogger.addError)
+            main(arg, endErrorLogger.addError)
         })
     } else {
         const timestampArr = getTimestampArray(ts, "\n");
         const args = checkTimestampInput(timestampArr);
         renameFile(timestampArr, args.videoFilename)
-        main(args, errorLogger.addError)
+        main(args, endErrorLogger.addError)
     }
 
-    errorLogger.logErrors();
+    endErrorLogger.logErrors();
     suspendSystem();
 }

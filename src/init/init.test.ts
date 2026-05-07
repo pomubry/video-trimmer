@@ -5,6 +5,7 @@ import * as main from "./main.js";
 import * as childProcess from "../services/childProcess.js";
 import * as filesystem from "../repositories/filesystem.js";
 import {init} from "./init.js";
+import {EndErrorLogger} from "../types/errors.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
 import type {MainArgs} from "../types/index.js";
@@ -53,6 +54,7 @@ describe("init function", () => {
     let spyError: MockInstance;
     let spyGetFileSize: MockInstance;
     let spyGetVideoDuration: MockInstance;
+    let endErrorLogger: EndErrorLogger;
 
     beforeEach(() => {
         vi.spyOn(console, "log").mockImplementation(vi.fn())
@@ -62,6 +64,7 @@ describe("init function", () => {
         spyError = vi.spyOn(console, "error");
         spyGetFileSize = vi.spyOn(filesystem, "getFileSize");
         spyGetVideoDuration = vi.spyOn(childProcess, "getVideoDuration")
+        endErrorLogger = new EndErrorLogger();
         reset20();
     })
 
@@ -74,10 +77,10 @@ describe("init function", () => {
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {encoding: "utf-8"});
             fs.writeFileSync(videoFilename, "random");
 
-            init();
+            init(endErrorLogger);
 
             expect(spyMain).toHaveBeenCalledTimes(1)
-            expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
+            expect(spyMain).toHaveBeenCalledWith(expectedArgs, endErrorLogger.addError);
             expect(spySuspend).toBeCalledTimes(1);
         })
 
@@ -87,7 +90,7 @@ describe("init function", () => {
             const expectedArg = getArgs(videoFilename);
             mockErrorFileSizeAndDuration(expectedArg, 1, spyGetVideoDuration, spyGetFileSize)
 
-            init();
+            init(endErrorLogger);
 
             expect(spyError).toHaveBeenCalledTimes(1)
             expect(spyError).toHaveBeenNthCalledWith(1, expect.stringMatching(/possible error/ig))
@@ -99,7 +102,7 @@ describe("init function", () => {
             const timestampWithError = createTimestamp(videoFilename, timestampPairs)
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
 
-            expect(() => init()).toThrow(/timestamp errors/i);
+            expect(() => init(endErrorLogger)).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0);
         })
 
@@ -113,11 +116,11 @@ describe("init function", () => {
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, createTimestamp(baseFileName, timestampPairs), {encoding: "utf-8"});
             fs.writeFileSync(baseFileName, "random");
 
-            init()
+            init(endErrorLogger)
 
             const dir = fs.readdirSync(".");
             expect(spyMain).toHaveBeenCalledTimes(1)
-            expect(spyMain).toHaveBeenCalledWith(expectedArgs, expect.any(Function));
+            expect(spyMain).toHaveBeenCalledWith(expectedArgs, endErrorLogger.addError);
             expect(dir).toContain(newFileName)
         })
     })
@@ -145,11 +148,11 @@ describe("init function", () => {
                 fs.writeFileSync(arg.videoFilename, "random");
             })
 
-            init();
+            init(endErrorLogger);
 
             expect(spyMain).toHaveBeenCalledTimes(expectedArgs.length)
             expectedArgs.forEach((arg, index) => {
-                expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, expect.any(Function));
+                expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, endErrorLogger.addError);
             })
             expect(spySuspend).toBeCalledTimes(1);
         })
@@ -166,7 +169,7 @@ describe("init function", () => {
                 mockErrorFileSizeAndDuration(arg, i + 1, spyGetVideoDuration, spyGetFileSize)
             })
 
-            init();
+            init(endErrorLogger);
 
             expect(spyError).toHaveBeenCalledTimes(2)
             expect(spyError).toHaveBeenNthCalledWith(1, expect.stringMatching(/possible error/ig))
@@ -185,7 +188,7 @@ describe("init function", () => {
 
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
 
-            expect(() => init()).toThrow(/timestamp errors/i);
+            expect(() => init(endErrorLogger)).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0)
         })
 
@@ -210,12 +213,12 @@ describe("init function", () => {
             const batchTimestampText = batchTimestamp.join("\n@batch@\n");
             fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestampText, {encoding: "utf-8"});
 
-            init()
+            init(endErrorLogger)
 
             const dir = fs.readdirSync(".");
             expect(spyMain).toHaveBeenCalledTimes(input.length)
             expectedArgs.forEach((arg, index) => {
-                expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, expect.any(Function));
+                expect(spyMain).toHaveBeenNthCalledWith(index + 1, arg, endErrorLogger.addError);
                 expect(dir).toContain(arg.videoFilename)
             })
         })
