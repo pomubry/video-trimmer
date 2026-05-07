@@ -2,7 +2,15 @@ import path from "node:path";
 
 import {getVideoDuration} from "../services/childProcess.js";
 import {checkVideoFile, getFileSize} from "../repositories/filesystem.js";
-import {greenText, redText, blueText, errorMsgFormatter, getSuggestedFilename, specialCharsRegex} from "./formatter.js";
+import {
+    greenText,
+    redText,
+    blueText,
+    errorMsgFormatter,
+    getSuggestedFilename,
+    specialCharsRegex,
+    removeIndent
+} from "./formatter.js";
 import {processTimestamps} from "./timestamp.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
@@ -13,10 +21,11 @@ export const checkFileExtension = (videoFile: string) => {
     const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
 
     if (extensionError === -1) {
+        const unindent = removeIndent(`The video format ${extensionName} is not supported.
+        Only the following extensions are valid:
+            ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
         throw new Error(
-            errorMsgFormatter(`The video format ${extensionName} is not supported.
-Only the following extensions are valid:
-    ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
+            errorMsgFormatter(unindent)
         )
     }
 }
@@ -29,10 +38,11 @@ export const checkVideoFilename = (videoFilename: string) => {
 
         if (APP_OPTIONS.AUTO_RENAME) return newFilename;
 
-        throw new Error(
-            errorMsgFormatter(`The video filename should not contain any special characters.
-${getSuggestedFilename(newFilename)}`)
+        const unindent = removeIndent(`The video filename should not contain any special characters.
+        ${getSuggestedFilename(newFilename)}`
         )
+
+        throw new Error(errorMsgFormatter(unindent))
     }
 };
 
@@ -50,15 +60,16 @@ export const checkVideoDurationErrors
         const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
         const isGreaterThanOne = Number(difference) > 1;
 
-        const message = `
-[${blueText(file)}] Duration: 
-    - Computed: ${(videoSegmentDurations[index]).toFixed(3)} seconds
-    - Actual: ${(durationInSeconds).toFixed(3)} seconds
-    - Difference: ${difference.toFixed(3)} seconds.${
-            isGreaterThanOne
-                ? redText(" Possible Error!")
-                : greenText(" Result Okay!")
-        }`
+        const message = removeIndent(`
+        [${blueText(file)}] Duration: 
+            - Computed: ${(videoSegmentDurations[index]).toFixed(3)} seconds
+            - Actual: ${(durationInSeconds).toFixed(3)} seconds
+            - Difference: ${difference.toFixed(3)} seconds.${
+                isGreaterThanOne
+                    ? redText(" Possible Error!")
+                    : greenText(" Result Okay!")
+            }`
+        )
 
         console.log(message);
 
@@ -97,9 +108,10 @@ export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: Ad
     if (diffInMB >= 0) {
         return `Saved ${greenText(diffInMB.toFixed(3))} MB`
     } else {
-        const message = `
-File [${blueText(newFile)}]:
-    New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`
+        const message = removeIndent(`
+        File [${blueText(newFile)}]:
+            New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`)
+        
         addError(message)
         return message
     }

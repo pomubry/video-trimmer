@@ -5,6 +5,7 @@ import {
     createFFmpegScripts,
     getVideoSegmentRegExp,
     outputFilenameFormatter,
+    removeIndent,
     sexagesimalToSeconds,
     videoCounter
 } from "./formatter.js";
@@ -209,5 +210,30 @@ describe("outputFilenameFormatter", () => {
         const expectedFilename = `input (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
 
         expect(outputFilenameFormatter(input)).toBe(expectedFilename);
+    })
+})
+
+describe("removeIndentation", () => {
+    test("Should remove indentation from a string", () => {
+        const input = `
+        [input]:
+            - Message 1
+            - Message 2`;
+        const expectedOutput = `
+[input]:
+    - Message 1
+    - Message 2`;
+
+        const res = removeIndent(input);
+
+        expect(res).toBe(expectedOutput);
+    })
+
+    test("Should return the same string", () => {
+        const input = `String without indentation`;
+
+        const res = removeIndent(input);
+
+        expect(res).toBe(input);
     })
 })

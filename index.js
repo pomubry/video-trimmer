@@ -118,9 +118,9 @@ The 2nd timestamp from line ${idx} might be undefined.`
   if (timestamp1 === prevTimestamp2) {
     return {
       isDuplicate: true,
-      message: `
-Duplicate timestamp found at line ${idx} and line ${idx + 1}:
-    --- Two instances of timestamp [${timestamp1}] were found.`
+      message: removeIndent(`
+            Duplicate timestamp found at line ${idx} and line ${idx + 1}:
+                --- Two instances of timestamp [${timestamp1}] were found.`)
     };
   }
   return {
@@ -145,11 +145,10 @@ var processTimestamps = (timestampArr) => {
       let timestamp2 = sexagesimalToSeconds(timestamps[1]);
       if (timestamp2 <= timestamp1) {
         tsError = true;
-        console.error(
-          `
-Timestamp duration error at line ${idx + 1}:
-    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
-        );
+        const unindent = removeIndent(`
+                Timestamp duration error at line ${idx + 1}:
+                    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`);
+        console.error(unindent);
         return acc;
       }
       const prevTimestamp = timestampArr[idx - 1] || "";
@@ -242,6 +241,15 @@ ${message}
 `;
 var specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 var getSuggestedFilename = (filename) => `Try renaming your filename to [${greenText(filename)}] instead.`;
+var removeIndent = (message) => {
+  const match = message.match(/\n([ \t]+)/);
+  let formatted = message;
+  if (match) {
+    const indent = match[1];
+    formatted = message.replace(new RegExp(`^${indent}`, "gm"), "");
+  }
+  return formatted;
+};
 
 // src/repositories/filesystem.ts
 var readTimestamps = () => {
@@ -288,7 +296,10 @@ var createTimestampCopy = (outputFilename, content) => {
   import_node_fs.default.writeFileSync(`${outputFilename}.txt`, `${content}`, { encoding: "utf-8" });
 };
 var renameFile = (timestampArr, newFilename) => {
-  if (timestampArr[0] === void 0) throw new Error("Renaming file failed because of empty timestamp.");
+  if (timestampArr[0] === void 0)
+    throw new Error(
+      errorMsgFormatter("Renaming file failed because of empty timestamp.")
+    );
   if (timestampArr[0] === newFilename) return;
   import_node_fs.default.renameSync(timestampArr[0], newFilename);
 };
@@ -300,10 +311,11 @@ var checkFileExtension = (videoFile) => {
   const extensionName = import_node_path4.default.extname(videoFile).toLowerCase().slice(1);
   const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
   if (extensionError === -1) {
+    const unindent = removeIndent(`The video format ${extensionName} is not supported.
+        Only the following extensions are valid:
+            ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`);
     throw new Error(
-      errorMsgFormatter(`The video format ${extensionName} is not supported.
-Only the following extensions are valid:
-    ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
+      errorMsgFormatter(unindent)
     );
   }
 };
@@ -312,10 +324,11 @@ var checkVideoFilename = (videoFilename) => {
   if (isInvalidFilename) {
     const newFilename = videoFilename.replace(specialCharsRegex, "");
     if (APP_OPTIONS.AUTO_RENAME) return newFilename;
-    throw new Error(
-      errorMsgFormatter(`The video filename should not contain any special characters.
-${getSuggestedFilename(newFilename)}`)
+    const unindent = removeIndent(
+      `The video filename should not contain any special characters.
+        ${getSuggestedFilename(newFilename)}`
     );
+    throw new Error(errorMsgFormatter(unindent));
   }
 };
 var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, addError) => videoSegments.reduce((acc, file, index) => {
@@ -327,11 +340,13 @@ var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, 
   }
   const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
   const isGreaterThanOne = Number(difference) > 1;
-  const message = `
-[${blueText(file)}] Duration: 
-    - Computed: ${videoSegmentDurations[index].toFixed(3)} seconds
-    - Actual: ${durationInSeconds.toFixed(3)} seconds
-    - Difference: ${difference.toFixed(3)} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`;
+  const message = removeIndent(
+    `
+        [${blueText(file)}] Duration: 
+            - Computed: ${videoSegmentDurations[index].toFixed(3)} seconds
+            - Actual: ${durationInSeconds.toFixed(3)} seconds
+            - Difference: ${difference.toFixed(3)} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`
+  );
   console.log(message);
   if (isGreaterThanOne) {
     addError(message);
@@ -360,9 +375,9 @@ var checkFileSizeDiff = (oldFile, newFile, addError) => {
   if (diffInMB >= 0) {
     return `Saved ${greenText(diffInMB.toFixed(3))} MB`;
   } else {
-    const message = `
-File [${blueText(newFile)}]:
-    New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`;
+    const message = removeIndent(`
+        File [${blueText(newFile)}]:
+            New file size is bigger than the original file by ${redText(Math.abs(diffInMB).toFixed(3))} MB.`);
     addError(message);
     return message;
   }
@@ -422,7 +437,7 @@ ${fileSizeDiff}
 };
 
 // src/types/errors.ts
-var EndLogError = class extends Error {
+var EndErrorLogger = class extends Error {
   #errors = [];
   constructor() {
     super();
@@ -436,11 +451,11 @@ var EndLogError = class extends Error {
     this.#errors.forEach((error) => console.error(error));
   };
 };
+var endErrorLogger = new EndErrorLogger();
 
 // src/init/init.ts
-var init = () => {
+var init = (endErrorLogger2) => {
   const ts = readTimestamps();
-  const errorLogger = new EndLogError();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
     const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
     const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map((timestampArr) => {
@@ -455,15 +470,15 @@ var init = () => {
             `Index ${i} of the timestamp batch is undefined.${timestampBatch}`
           )
         );
-      main(arg, errorLogger.addError);
+      main(arg, endErrorLogger2.addError);
     });
   } else {
     const timestampArr = getTimestampArray(ts, "\n");
     const args = checkTimestampInput(timestampArr);
     renameFile(timestampArr, args.videoFilename);
-    main(args, errorLogger.addError);
+    main(args, endErrorLogger2.addError);
   }
-  errorLogger.logErrors();
+  endErrorLogger2.logErrors();
   suspendSystem();
 };
 
@@ -472,7 +487,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
   console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`));
 }
 try {
-  init();
+  init(endErrorLogger);
 } catch (e) {
   console.log(
     `

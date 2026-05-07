@@ -1,4 +1,5 @@
 import * as formatter from "./formatter.js";
+import {removeIndent} from "./formatter.js";
 import {FFMPEG_OPTIONS} from "../config.js";
 
 // Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
@@ -49,9 +50,9 @@ const isDuplicateTimestamp = (
     if (timestamp1 === prevTimestamp2) {
         return {
             isDuplicate: true,
-            message: `
-Duplicate timestamp found at line ${idx} and line ${idx + 1}:
-    --- Two instances of timestamp [${timestamp1}] were found.`
+            message: removeIndent(`
+            Duplicate timestamp found at line ${idx} and line ${idx + 1}:
+                --- Two instances of timestamp [${timestamp1}] were found.`)
         }
     }
 
@@ -85,10 +86,11 @@ export const processTimestamps = (timestampArr: string[]) => {
             // Check for all possible timestamp errors
             if (timestamp2 <= timestamp1) {
                 tsError = true;
-                console.error(`
-Timestamp duration error at line ${idx + 1}:
-    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`
-                );
+                const unindent = removeIndent(`
+                Timestamp duration error at line ${idx + 1}:
+                    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`)
+
+                console.error(unindent);
                 return acc
             }
 

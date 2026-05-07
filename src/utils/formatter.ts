@@ -88,3 +88,15 @@ export const errorMsgFormatter = (message: string) => `\n${message}\n`
 export const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
 
 export const getSuggestedFilename = (filename: string) => `Try renaming your filename to [${greenText(filename)}] instead.`
+
+export const removeIndent = (message: string) => {
+    const match = message.match(/\n([ \t]+)/);
+    let formatted = message;
+
+    if (match) {
+        const indent = match[1];
+        formatted = message.replace(new RegExp(`^${indent}`, 'gm'), '');
+    }
+
+    return formatted;
+}

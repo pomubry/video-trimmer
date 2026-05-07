@@ -13,7 +13,7 @@ import {
     removeVideoSegments,
     renameFile
 } from "./filesystem.js";
-import {outputFilenameFormatter, videoCounter} from "../utils/formatter.js";
+import {outputFilenameFormatter, removeIndent, videoCounter} from "../utils/formatter.js";
 import {checkFileSizeDiff} from "../utils/validator.js";
 import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
 
@@ -65,9 +65,10 @@ describe("Video File Checker", () => {
 
 describe("createSegmentList", () => {
     test("Should create a list of video segments", () => {
-        const expectedText = `file '${path.join(baseName, `${baseName}_${videoCounter(1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
-file '${path.join(baseName, `${baseName}_${videoCounter(2)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
-file '${path.join(baseName, `${baseName}_${videoCounter(3)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'`
+        const expectedText = removeIndent(`file '${path.join(baseName, `${baseName}_${videoCounter(1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
+        file '${path.join(baseName, `${baseName}_${videoCounter(2)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
+        file '${path.join(baseName, `${baseName}_${videoCounter(3)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'`
+        )
 
         createSegmentList(videoSegments, baseName);
 

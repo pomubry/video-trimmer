@@ -1,9 +1,6 @@
-import {afterEach, describe, expect, test, vi} from "vitest";
+import {describe, expect, test, vi} from "vitest";
 import {getTimestampArray, processTimestamps} from "./timestamp.js";
-
-afterEach(() => {
-    vi.restoreAllMocks()
-})
+import {removeIndent} from "./formatter.js";
 
 describe("processTimestamps", () => {
     test("Should return an array without video filename", () => {
@@ -113,12 +110,14 @@ describe("processTimestamps", () => {
 
 describe("getTimestampArray", () => {
     test("Should return an array of timestamps", () => {
-        const timestamp = `input.mp4
-00:00:00.000 00:01:00.000
-00:02:00.000 00:04:00.000
-00:05:00.000 00:08:00.000
-00:09:00.000 00:13:00.000
-00:14:00.000 00:19:00.000`
+        const timestamp = removeIndent(`input.mp4
+        00:00:00.000 00:01:00.000
+        00:02:00.000 00:04:00.000
+        00:05:00.000 00:08:00.000
+        00:09:00.000 00:13:00.000
+        00:14:00.000 00:19:00.000`
+        )
+
         const expectedArray = [
             "input.mp4",
             "00:00:00.000 00:01:00.000",

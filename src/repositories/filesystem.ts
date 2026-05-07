@@ -57,7 +57,10 @@ export const createTimestampCopy = (outputFilename: string, content: string) => 
 };
 
 export const renameFile = (timestampArr: string[], newFilename: string) => {
-    if (timestampArr[0] === undefined) throw new Error("Renaming file failed because of empty timestamp.");
+    if (timestampArr[0] === undefined)
+        throw new Error(
+            errorMsgFormatter("Renaming file failed because of empty timestamp.")
+        );
     if (timestampArr[0] === newFilename) return;
 
     fs.renameSync(timestampArr[0], newFilename)
