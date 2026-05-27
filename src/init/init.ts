@@ -1,12 +1,11 @@
-import {main} from "./main.js";
-import {readTimestamps, renameFile} from "../system/filesystem.js";
-import {suspendSystem} from "../system/childProcess.js";
-import {getTimestampArray} from "../utils/timestamp.js";
-import {checkTimestampInput} from "../utils/validator.js";
-import {errorMsgFormatter} from "../utils/formatter.js";
-import {APP_OPTIONS} from "../config.js";
-
-import {EndErrorLogger} from "../utils/endErrorLogger.js";
+import { main } from "./main.js";
+import { readTimestamps, renameFile } from "../system/filesystem.js";
+import { suspendSystem } from "../system/childProcess.js";
+import { getMainArgs } from "../utils/timestamp.js";
+import { errorMsgFormatter } from "../utils/formatter.js";
+import { getTimestampArray } from "../utils/timestamp.js";
+import { EndErrorLogger } from "../utils/endErrorLogger.js";
+import { APP_OPTIONS } from "../config.js";
 
 export const init = (endErrorLogger: EndErrorLogger) => {
     const ts = readTimestamps();
@@ -17,7 +16,7 @@ export const init = (endErrorLogger: EndErrorLogger) => {
         const mainArgs = timestampBatch
             .map((ts) => getTimestampArray(ts, "\n"))
             .map(timestampArr => {
-                const args = checkTimestampInput(timestampArr);
+                const args = getMainArgs(timestampArr);
                 renameFile(timestampArr, args.videoFilename)
                 return args
             })
@@ -34,7 +33,7 @@ export const init = (endErrorLogger: EndErrorLogger) => {
         })
     } else {
         const timestampArr = getTimestampArray(ts, "\n");
-        const args = checkTimestampInput(timestampArr);
+        const args = getMainArgs(timestampArr);
         renameFile(timestampArr, args.videoFilename)
         main(args, endErrorLogger.addError)
     }

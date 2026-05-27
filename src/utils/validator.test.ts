@@ -1,72 +1,9 @@
-import {describe, expect, test, vi} from "vitest";
-import {fs} from "memfs";
+import { describe, expect, test, vi } from "vitest";
 
-import {checkFileExtension, checkVideoDurationErrors, checkVideoFilename} from "./validator.js";
-import {getVideoDuration} from "../system/childProcess.js";
-import {APP_OPTIONS} from "../config.js";
+import { getVideoDuration } from "../system/childProcess.js";
+import { checkVideoDurationErrors } from "./validator.js";
 
-describe("checkFileExtension", () => {
-    test("Should throw with invalid input", () => {
-        expect(() => checkFileExtension("input.exe")).toThrow(/(?=.*exe is not supported)(?=.*Only the following extensions are valid)/is)
-    })
-
-    test("Should not throw with valid input", () => {
-        expect(() => checkFileExtension("input.mp4")).not.toThrow()
-    })
-})
-
-describe("checkVideoFilename", () => {
-    test("Should accept valid input video filename", () => {
-        expect(() => checkVideoFilename("inputShouldHaveNoParenthesis.mp4")).not.toThrow();
-    })
-
-    test("Should throw with invalid input video characters", () => {
-        expect(() => checkVideoFilename("inputShouldHaveNo`.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo~.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo!.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo@.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo#.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo$.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo%.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo^.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo&.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo*.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo().mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo=.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo[].mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo{}.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo\\.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo|.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo/.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo;.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo:.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo'.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo\".mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo,.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo<>.mp4")).toThrow();
-        expect(() => checkVideoFilename("inputShouldHaveNo?.mp4")).toThrow();
-    })
-
-    test("should return suggested filename based on config", () => {
-        vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
-        const oldFilename = "my! invalid@input$.mp4"
-        const newFilename = "my invalidinput.mp4"
-        fs.writeFileSync(oldFilename, "random");
-
-        const res = checkVideoFilename(oldFilename);
-
-        expect(res).toBe(newFilename);
-    })
-
-    test("should throw with a suggested filename", () => {
-        const filename = "my! invalid@input$.mp4"
-        const expectedFilename = "my invalidinput.mp4"
-
-        expect(() => checkVideoFilename(filename)).toThrow(expectedFilename)
-    })
-})
-
-describe("checkVideoDuration", () => {
+describe("checkVideoDurationErrors", () => {
     const spy = vi.fn()
     const baseName = "randomVideo"
     const videoSegments = new Array(5)

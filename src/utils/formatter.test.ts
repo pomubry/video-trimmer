@@ -1,89 +1,22 @@
 import path from "node:path"
-import {vi, describe, test, beforeEach, expect} from "vitest";
+import { vi, describe, test, beforeEach, expect } from "vitest";
 
 import {
     createFFmpegScripts,
     getVideoSegmentRegExp,
     outputFilenameFormatter,
     removeIndent,
-    sexagesimalToSeconds,
     videoCounter
 } from "./formatter.js";
-import {timestampRegex} from "./timestamp.js";
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type {FFmpegArguments} from "../types/index.js";
+import type { FFmpegArguments } from "../types/index.js";
 
 beforeEach(() => {
     vi.restoreAllMocks();
 })
 
-describe("Timestamp Format", () => {
-    test("Properly identify formatted timestamp", () => {
-        const ts = timestampRegex.test("12:34:56.123456789 12:34:56.123456789")
-        expect(ts).toBe(true);
-    })
-
-    test("Accept timestamp with 3 decimal place", () => {
-        const ts = timestampRegex.test("12:34:56.123 12:34:56.123456789")
-        expect(ts).toBe(true);
-    })
-
-    test("Decline timestamp with 2 or less decimal place", () => {
-        const ts = timestampRegex.test("12:34:56.123456789 12:34:56.12")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with 10 or more decimal place", () => {
-        const ts = timestampRegex.test("12:34:56.1234567891 12:34:56.123456789")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with invalid characters from each end", () => {
-        const ts = timestampRegex.test("a12:34:56.1234567891 12:34:56.123456789 b")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with newline", () => {
-        const ts = timestampRegex.test("\n12:34:56.123456789 12:34:56.123456789\n")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with tab separator", () => {
-        const ts = timestampRegex.test("12:34:56.123456789\t12:34:56.123456789")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with double space", () => {
-        const ts = timestampRegex.test("12:34:56.123456789  12:34:56.123456789")
-        expect(ts).toBe(false);
-    })
-
-    test("Decline timestamp with special char for whitespace", () => {
-        const ts = timestampRegex.test("12:34:56.123456789\s12:34:56.123456789")
-        expect(ts).toBe(false);
-    })
-})
-
-describe("Sexagesimal to Seconds Conversion", () => {
-    test("Invalid sexagesimal input should throw an error", () => {
-        const msgRegex = /invalid sexagesimal/i;
-
-        expect(() => sexagesimalToSeconds("12:34:56.12")).toThrowError(msgRegex)
-        expect(() => sexagesimalToSeconds("12:34:56.1234567891")).toThrowError(msgRegex)
-        expect(() => sexagesimalToSeconds("invalid input")).toThrowError(msgRegex);
-    })
-
-    test("Valid input should return a number in seconds", () => {
-        const second1 = sexagesimalToSeconds("12:34:56.123456789")
-        const second2 = sexagesimalToSeconds("12:34:56.123")
-
-        expect(second1).toBe(45296.123456789)
-        expect(second2).toBe(45296.123)
-    })
-})
-
-describe("Video Counter", () => {
+describe("videoCounter", () => {
     test("Prepend 00 to the counter with numbers less than 10", () => {
         expect(videoCounter(1)).toBe("001")
         expect(videoCounter(9)).toBe("009")
@@ -100,7 +33,7 @@ describe("Video Counter", () => {
     })
 })
 
-describe("Generated FFmpeg Scripts", () => {
+describe("createFFmpegScripts", () => {
     const input = "input.mp4";
     const basename = path.parse(input).name;
 
@@ -192,7 +125,7 @@ describe("Generated FFmpeg Scripts", () => {
 
 describe("Video Segment Regexp", () => {
     const input = "input";
-    const {EXTENSION_NAME} = FILENAME_OPTIONS
+    const { EXTENSION_NAME } = FILENAME_OPTIONS
     const regexp = getVideoSegmentRegExp(input, EXTENSION_NAME);
 
     test("Return true for valid filenames", () => {
@@ -213,7 +146,7 @@ describe("outputFilenameFormatter", () => {
     })
 })
 
-describe("removeIndentation", () => {
+describe("removeIndent", () => {
     test("Should remove indentation from a string", () => {
         const input = `
         [input]:

@@ -1,16 +1,17 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from "vitest";
-import {fs} from "memfs";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { fs } from "memfs";
 
 import * as fileSystem from "../system/filesystem.js";
 import * as validator from "../utils/validator.js";
-import {main} from "./main.js";
-import {readTimestamps} from "../system/filesystem.js";
-import {outputFilenameFormatter, sexagesimalFormat, videoCounter} from "../utils/formatter.js";
-import {getTimestampArray} from "../utils/timestamp.js";
 
-import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { main } from "./main.js";
+import { readTimestamps } from "../system/filesystem.js";
+import { getMainArgs, secondsToHms } from "../utils/timestamp.js";
+import { outputFilenameFormatter, videoCounter } from "../utils/formatter.js";
+import { getTimestampArray } from "../utils/timestamp.js";
+import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type {MainArgs} from "../types/index.js";
+import type { MainArgs } from "../types/index.js";
 
 const baseName = "segment"
 const timestampText = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}
@@ -32,7 +33,7 @@ const argsInit: MainArgs = {
 }
 
 describe("main function", () => {
-    let args = {...argsInit};
+    let args = { ...argsInit };
     const otherFile = "other-file.txt"
     const spy = vi.fn();
 
@@ -44,19 +45,19 @@ describe("main function", () => {
             .mockReturnValueOnce(50000)
             .mockReturnValueOnce(10000)
 
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, {encoding: "utf-8"});
+        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampText, { encoding: "utf-8" });
         fs.writeFileSync(`${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`, "random");
         fs.writeFileSync(otherFile, "random");
 
         const ts = readTimestamps();
         const timestampArr = getTimestampArray(ts, "\n");
         args = {
-            ...validator.checkTimestampInput(timestampArr)
+            ...getMainArgs(timestampArr)
         };
     })
 
     afterEach(() => {
-        args = {...argsInit}
+        args = { ...argsInit }
     })
 
     test("should create expected files", async () => {
@@ -73,7 +74,7 @@ describe("main function", () => {
 
         const files = fs.readdirSync(".")
         const copiedData = fs.readFileSync(baseName + ".txt", "utf-8")
-        const totalTimeLogged = sexagesimalFormat((1 + 2 + 3 + 4 + 5) * 60);
+        const totalTimeLogged = secondsToHms((1 + 2 + 3 + 4 + 5) * 60);
 
         expect(files).toEqual(expect.arrayContaining(expectedFiles))
 

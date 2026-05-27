@@ -1,28 +1,16 @@
-import * as formatter from "./formatter.js";
-import {removeIndent} from "./formatter.js";
-import {FFMPEG_OPTIONS} from "../config.js";
+import path from "node:path";
 
-// Timestamp in sexagesimal format: '12:34:56.123456789 12:34:56.123456789'
-export const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
+import { checkVideoFile } from "../system/filesystem.js";
+import { errorMsgFormatter, greenText, removeIndent } from "./formatter.js";
+import { APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-export const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
+import type { MainArgs } from "../types/index.js";
 
-/*
-Split the strings inside the array by whitespaces.
-The result would be in the form: [[timestamp1,timestamp2],[timestamp3,timestamp4],etc]
-*/
-const getTimestampPair = (timestamp: string, offset: number) => {
-    let timestampPair = timestamp.split(/\s/);
+// Timestamp in HMS format: '12:34:56.123456789 12:34:56.123456789'
+const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
+const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 
-    if (offset !== 0) {
-        timestampPair = timestampPair.map((singleTs) => {
-            let tsInSeconds = formatter.sexagesimalToSeconds(singleTs);
-            return formatter.sexagesimalFormat(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
-        });
-    }
-
-    return timestampPair;
-};
+const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|;:'",<>?]/g;
 
 /*
 Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
@@ -31,7 +19,7 @@ i.e.,
 "00:05:00.00000000 00:10:00.000000000"
 will give an error.
 */
-const isDuplicateTimestamp = (
+const checkDuplicateTimestamp = (
     prevTimestamp: string,
     timestamp1: string,
     idx: number
@@ -62,7 +50,32 @@ const isDuplicateTimestamp = (
     }
 }
 
-export const processTimestamps = (timestampArr: string[]) => {
+const hmsToSeconds = (sexagesimal: string) => {
+    let timeArr = sexagesimal.split(":");
+    return timeArr.reduce(
+        (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
+        0
+    );
+}
+
+/*
+Split the strings inside the array by whitespaces.
+The result would be in the form: [timestamp1,timestamp2]
+*/
+const getTimestampPair = (timestamp: string, offset: number) => {
+    let timestampPair = timestamp.split(/\s/);
+
+    if (offset !== 0) {
+        timestampPair = timestampPair.map((singleTs) => {
+            let tsInSeconds = hmsToSeconds(singleTs);
+            return secondsToHms(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
+        });
+    }
+
+    return timestampPair;
+};
+
+const processTimestamps = (timestampArr: string[]) => {
     let tsError = false;
     let totalTime = 0;
     let videoSegmentDurations: number[] = [];
@@ -80,8 +93,8 @@ export const processTimestamps = (timestampArr: string[]) => {
             let timestamps = timestamp.split(/\s/g) as [string, string];
 
             // Convert the time string format into seconds.
-            let timestamp1 = formatter.sexagesimalToSeconds(timestamps[0]);
-            let timestamp2 = formatter.sexagesimalToSeconds(timestamps[1]);
+            let timestamp1 = hmsToSeconds(timestamps[0]);
+            let timestamp2 = hmsToSeconds(timestamps[1]);
 
             // Check for all possible timestamp errors
             if (timestamp2 <= timestamp1) {
@@ -94,13 +107,9 @@ export const processTimestamps = (timestampArr: string[]) => {
                 return acc
             }
 
-            const prevTimestamp = timestampArr[idx - 1] || "";
-            if (!timestampRegex.test(prevTimestamp) && idx > 1) {
-                tsError = true;
-                return acc
-            }
+            const prevTimestamp = timestampArr[idx - 1]!
 
-            const res = isDuplicateTimestamp(prevTimestamp, timestamps[0], idx)
+            const res = checkDuplicateTimestamp(prevTimestamp, timestamps[0], idx)
             if (res.isDuplicate) {
                 tsError = true;
                 console.error(res.message)
@@ -119,11 +128,70 @@ export const processTimestamps = (timestampArr: string[]) => {
     }, [] as string[][]);
 
     if (tsError) throw new Error(
-        formatter.errorMsgFormatter("Timestamp errors were found.")
+        errorMsgFormatter('Timestamp errors were found.')
     )
 
-    return {timestampPairs, totalTime, videoSegmentDurations, videoFilename};
+    return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 }
+
+const checkFileExtension = (videoFilename: string) => {
+    const extensionName = path.extname(videoFilename).toLowerCase().slice(1);
+    const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
+
+    if (extensionError === -1) {
+        const unindent = removeIndent(`The video format ${extensionName} is not supported.
+        Only the following extensions are valid:
+            ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
+        throw new Error(
+            errorMsgFormatter(unindent)
+        )
+    }
+}
+
+const getSuggestedFilename = (videoFilename: string) => `Try renaming your filename to [${greenText(videoFilename)}] instead.`
+
+const checkVideoFilename = (videoFilename: string) => {
+    const isInvalidFilename = specialCharsRegex.test(videoFilename)
+
+    if (isInvalidFilename) {
+        const newFilename = videoFilename.replace(specialCharsRegex, "");
+
+        if (APP_OPTIONS.AUTO_RENAME) return newFilename;
+
+        const unindent = removeIndent(`The video filename should not contain any special characters.
+        ${getSuggestedFilename(newFilename)}`
+        )
+
+        throw new Error(errorMsgFormatter(unindent))
+    }
+};
+
+export const getMainArgs = (timestampArr: string[]) => {
+    const res: MainArgs = {
+        timestamp: "",
+        ...processTimestamps(timestampArr)
+    };
+
+    checkFileExtension(res.videoFilename);
+    checkVideoFile(res.videoFilename);
+
+    const newFilename = checkVideoFilename(res.videoFilename);
+    if (newFilename !== undefined)
+        res.videoFilename = newFilename;
+
+    const timestampPairs = res.timestampPairs.map((pair) => pair.join(" "));
+    res.timestamp = [newFilename || res.videoFilename, ...timestampPairs].join("\n");
+
+    return res
+}
+
+export const secondsToHms = (durationInSeconds: number) => {
+    let hour = Math.floor(durationInSeconds / 3600);
+    let minute = Math.floor((durationInSeconds % 3600) / 60);
+    let seconds = (durationInSeconds % 3600) % 60;
+    return `${hour < 10 ? "0" + hour : hour}:${minute < 10 ? "0" + minute : minute
+        }:${seconds < 10 ? "0" + seconds.toFixed(3) : seconds.toFixed(3)}`;
+};
 
 export const getTimestampArray = (timestamp: string, separator: string | RegExp) => timestamp
     .split(separator)

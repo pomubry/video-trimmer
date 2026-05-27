@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "node:path";
 
-import {createVideoSegment, mergeVideoSegments} from "../system/childProcess.js";
+import { createVideoSegment, mergeVideoSegments } from "../system/childProcess.js";
 import {
     createSegmentList,
     createTimestampCopy,
@@ -14,12 +14,12 @@ import {
     getVideoSegmentRegExp,
     greenText,
     outputFilenameFormatter,
-    sexagesimalFormat
 } from "../utils/formatter.js";
-import {checkFileSizeDiff, checkVideoDurationErrors} from "../utils/validator.js";
-import {APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { checkFileSizeDiff, checkVideoDurationErrors } from "../utils/validator.js";
+import { secondsToHms } from "../utils/timestamp.js";
+import { APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type {MainArgs, AddError, FFmpegArguments} from "../types/index.js";
+import type { MainArgs, AddError, FFmpegArguments } from "../types/index.js";
 
 export const main = (args: MainArgs, addError: AddError) => {
     const {
@@ -30,7 +30,7 @@ export const main = (args: MainArgs, addError: AddError) => {
     } = args;
 
     const baseName = path.parse(videoFilename).name;
-    fs.mkdirSync(baseName, {recursive: true});
+    fs.mkdirSync(baseName, { recursive: true });
 
     let videoSegments = fs.readdirSync(baseName);
     const ffmpegArgs: FFmpegArguments = {
@@ -82,12 +82,12 @@ export const main = (args: MainArgs, addError: AddError) => {
 
     APP_OPTIONS.KEEP_TIMESTAMP_COPY && createTimestampCopy(baseName, args.timestamp);
 
-    const sexagesimal = sexagesimalFormat(totalTime);
+    const hms = secondsToHms(totalTime);
     const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
 
     console.log(`
-DONE! Video output should be about ${sexagesimal} long. 
-Total processing time: ${sexagesimalFormat(elapsedTime)}
+DONE! Video output should be about ${hms} long. 
+Total processing time: ${secondsToHms(elapsedTime)}
 ${fileSizeDiff}
 `
     );

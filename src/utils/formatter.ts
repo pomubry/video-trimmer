@@ -1,36 +1,15 @@
 import path from "node:path";
 import os from "node:os"
 
-import {timestampPattern} from "./timestamp.js";
-import {FILENAME_OPTIONS} from "../config.js";
+import { FILENAME_OPTIONS } from "../config.js";
 
-import type {FFmpegArguments, FFmpegConfig} from "../types/index.js";
+import type { FFmpegArguments, FFmpegConfig } from "../types/index.js";
 
-export const redText = (text: string) => `\x1b[31m${text}\x1b[0m`
-export const greenText = (text: string) => `\x1b[32m${text}\x1b[0m`
-export const blueText = (text: string) => `\x1b[94m${text}\x1b[0m`
-export const purpleText = (text: string) => `\x1b[35m${text}\x1b[0m`
-
-export const sexagesimalFormat = (durationInSeconds: number) => {
-    let hour = Math.floor(durationInSeconds / 3600);
-    let minute = Math.floor((durationInSeconds % 3600) / 60);
-    let seconds = (durationInSeconds % 3600) % 60;
-    return `${hour < 10 ? "0" + hour : hour}:${
-        minute < 10 ? "0" + minute : minute
-    }:${seconds < 10 ? "0" + seconds.toFixed(4) : seconds.toFixed(3)}`;
-};
-
-export const sexagesimalToSeconds = (sexagesimal: string) => {
-    if (!(new RegExp(`^${timestampPattern}$`)).test(sexagesimal)) {
-        throw new Error(errorMsgFormatter("Invalid sexagesimal"));
-    }
-
-    let timeArr = sexagesimal.split(":");
-    return timeArr.reduce(
-        (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
-        0
-    );
-};
+const coloredText = (colorCode: string, message: string) => `\x1b[${colorCode}${message}\x1b[0m`
+export const redText = (text: string) => coloredText("31m", text)
+export const greenText = (text: string) => coloredText("32m", text)
+export const blueText = (text: string) => coloredText("94m", text)
+export const purpleText = (text: string) => coloredText("35m", text)
 
 export const videoCounter = (counter: number) => {
     let number = "";
@@ -47,8 +26,8 @@ export const videoCounter = (counter: number) => {
 }
 
 export const createFFmpegScripts = (
-    {input, timestampPairs, videoSegments,}: FFmpegArguments,
-    {FPS, HEVC}: FFmpegConfig
+    { input, timestampPairs, videoSegments, }: FFmpegArguments,
+    { FPS, HEVC }: FFmpegConfig
 ) => {
     const basename = path.parse(input).name
 
@@ -84,10 +63,6 @@ export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) =
 export const outputFilenameFormatter = (basename: string) => `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
 
 export const errorMsgFormatter = (message: string) => `\n${message}\n`
-
-export const specialCharsRegex = /[`~!@#$%^&*()=\[\]{}\\|/;:'",<>?]/g;
-
-export const getSuggestedFilename = (filename: string) => `Try renaming your filename to [${greenText(filename)}] instead.`
 
 export const removeIndent = (message: string) => {
     const match = message.match(/\n([ \t]+)/);

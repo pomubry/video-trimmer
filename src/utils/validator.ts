@@ -1,104 +1,41 @@
-import path from "node:path";
+import { getVideoDuration } from "../system/childProcess.js";
+import { getFileSize } from "../system/filesystem.js";
+import { blueText, greenText, redText, errorMsgFormatter, removeIndent } from "./formatter.js";
 
-import {getVideoDuration} from "../system/childProcess.js";
-import {checkVideoFile, getFileSize} from "../system/filesystem.js";
-import {
-    greenText,
-    redText,
-    blueText,
-    errorMsgFormatter,
-    getSuggestedFilename,
-    specialCharsRegex,
-    removeIndent
-} from "./formatter.js";
-import {processTimestamps} from "./timestamp.js";
-import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
-
-import type {MainArgs, AddError} from "../types/index.js";
-
-export const checkFileExtension = (videoFile: string) => {
-    const extensionName = path.extname(videoFile).toLowerCase().slice(1);
-    const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
-
-    if (extensionError === -1) {
-        const unindent = removeIndent(`The video format ${extensionName} is not supported.
-        Only the following extensions are valid:
-            ${FILENAME_OPTIONS.SUPPORTED_EXTENSIONS}`)
-        throw new Error(
-            errorMsgFormatter(unindent)
-        )
-    }
-}
-
-export const checkVideoFilename = (videoFilename: string) => {
-    const isInvalidFilename = specialCharsRegex.test(videoFilename)
-
-    if (isInvalidFilename) {
-        const newFilename = videoFilename.replace(specialCharsRegex, "");
-
-        if (APP_OPTIONS.AUTO_RENAME) return newFilename;
-
-        const unindent = removeIndent(`The video filename should not contain any special characters.
-        ${getSuggestedFilename(newFilename)}`
-        )
-
-        throw new Error(errorMsgFormatter(unindent))
-    }
-};
+import type { AddError } from "../types/index.js";
 
 export const checkVideoDurationErrors
     = (videoSegments: string[], videoSegmentDurations: number[], baseName: string, addError: AddError) =>
-    videoSegments.reduce((acc, file, index) => {
-        const durationInSeconds = getVideoDuration(baseName, file);
+        videoSegments.reduce((acc, file, index) => {
+            const durationInSeconds = getVideoDuration(baseName, file);
 
-        if (videoSegmentDurations[index] === undefined) {
-            throw new Error(
-                errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
-            )
-        }
+            if (videoSegmentDurations[index] === undefined) {
+                throw new Error(
+                    errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
+                )
+            }
 
-        const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
-        const isGreaterThanOne = Number(difference) > 1;
+            const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
+            const isGreaterThanOne = Number(difference) > 1;
 
-        const message = removeIndent(`
+            const message = removeIndent(`
         [${blueText(file)}] Duration: 
             - Computed: ${(videoSegmentDurations[index]).toFixed(3)} seconds
             - Actual: ${(durationInSeconds).toFixed(3)} seconds
-            - Difference: ${difference.toFixed(3)} seconds.${
-                isGreaterThanOne
+            - Difference: ${difference.toFixed(3)} seconds.${isGreaterThanOne
                     ? redText(" Possible Error!")
                     : greenText(" Result Okay!")
-            }`
-        )
+                }`
+            )
 
-        console.log(message);
+            console.log(message);
 
-        if (isGreaterThanOne) {
-            addError(message)
-            return [...acc, file]
-        }
-
-        return acc
-    }, [] as string[]);
-
-export const checkTimestampInput = (timestampArr: string[]) => {
-    const res: MainArgs = {
-        timestamp: "",
-        ...processTimestamps(timestampArr)
-    };
-
-    checkFileExtension(res.videoFilename);
-    checkVideoFile(res.videoFilename);
-
-    const newFilename = checkVideoFilename(res.videoFilename);
-    if (newFilename !== undefined)
-        res.videoFilename = newFilename;
-
-    const timestampPairs = res.timestampPairs.map((pair) => pair.join(" "));
-    res.timestamp = [newFilename || res.videoFilename, ...timestampPairs].join("\n");
-
-    return res
-}
+            if (isGreaterThanOne) {
+                addError(message)
+                return [...acc, file]
+            }
+            return acc
+        }, [] as string[]);
 
 export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: AddError) => {
     const oldSize = getFileSize(oldFile);
