@@ -1,7 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
 
+import * as fileSystem from "../system/filesystem.js";
 import { getVideoDuration } from "../system/childProcess.js";
-import { checkVideoDurationErrors } from "./validator.js";
+import { checkFileSizeDiff, checkVideoDurationErrors } from "./validator.js";
 
 describe("checkVideoDurationErrors", () => {
     const spy = vi.fn()
@@ -45,4 +46,34 @@ describe("checkVideoDurationErrors", () => {
         expect(spyLog).toHaveBeenNthCalledWith(4, okayString)
         expect(spyLog).toHaveBeenNthCalledWith(5, errorString)
     })
+})
+
+describe("getFileSizeDiff", () => {
+    test("should return the amount of storage saved in MB", () => {
+        const spy = vi.fn()
+        const oldSize = 50000;
+        const newSize = 10000;
+        vi.spyOn(fileSystem, "getFileSize")
+            .mockReturnValueOnce(oldSize)
+            .mockReturnValueOnce(newSize)
+
+        const res = checkFileSizeDiff("a", "b", spy)
+
+        expect(res).toMatch(/saved .+\d+.+ mb/i)
+        expect(spy).toHaveBeenCalledTimes(0)
+    })
+
+    test(`should add an error to EndErrorLogger`, () => {
+        const spy = vi.fn()
+        vi.spyOn(fileSystem, "getFileSize")
+            .mockReturnValueOnce(10000)
+            .mockReturnValueOnce(50000)
+        const expectedRegex = /bigger than the original/ig
+
+        const res = checkFileSizeDiff("a", "b", spy)
+
+        expect(res).toMatch(expectedRegex)
+        expect(spy).toHaveBeenCalledWith(expect.stringMatching(expectedRegex))
+    })
+
 })

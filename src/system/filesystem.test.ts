@@ -1,8 +1,7 @@
 import path from "node:path";
-import {vi, describe, test, beforeEach, expect} from 'vitest'
-import {fs} from "memfs";
+import { vi, describe, test, beforeEach, expect } from 'vitest'
+import { fs } from "memfs";
 
-import * as fileSystem from "./filesystem.js";
 import {
     checkVideoFile,
     createSegmentList,
@@ -13,10 +12,8 @@ import {
     removeVideoSegments,
     renameFile
 } from "./filesystem.js";
-import {outputFilenameFormatter, removeIndent, videoCounter} from "../utils/formatter.js";
-import {checkFileSizeDiff} from "../utils/validator.js";
-import {EndErrorLogger} from "../utils/endErrorLogger.js";
-import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { outputFilenameFormatter, removeIndent, videoCounter } from "../utils/formatter.js";
+import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 const baseName = "input"
 const videoSegments = new Array(3)
@@ -49,7 +46,6 @@ describe("Timestamp reader", () => {
     })
 })
 
-
 describe("Video File Checker", () => {
     test("Should not throw an error if video is found", () => {
         const videoFile = "input.mp4"
@@ -71,7 +67,7 @@ describe("createSegmentList", () => {
 
         createSegmentList(videoSegments, baseName);
 
-        const res = fs.readFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, {encoding: "utf-8"});
+        const res = fs.readFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, { encoding: "utf-8" });
         expect(res).toBe(expectedText);
     })
 })
@@ -183,36 +179,7 @@ describe("renameFile", () => {
 
         renameFile(timestampArr, newName);
 
-        const res = fs.readFileSync(newName, {encoding: "utf-8"});
+        const res = fs.readFileSync(newName, { encoding: "utf-8" });
         expect(res).toBe(randomText)
-    })
-})
-
-describe("getFileSizeDiff", () => {
-    test("should return the amount of storage saved in MB", () => {
-        const spy = vi.fn()
-        const oldSize = 50000;
-        const newSize = 10000;
-        vi.spyOn(fileSystem, "getFileSize")
-            .mockReturnValueOnce(oldSize)
-            .mockReturnValueOnce(newSize)
-
-        const res = checkFileSizeDiff("a", "b", spy)
-
-        expect(res).toMatch(/saved .+\d+.+ mb/i)
-        expect(spy).toHaveBeenCalledTimes(0)
-    })
-
-    test(`should add an error to ${EndErrorLogger.name}`, () => {
-        const spy = vi.fn()
-        vi.spyOn(fileSystem, "getFileSize")
-            .mockReturnValueOnce(10000)
-            .mockReturnValueOnce(50000)
-        const expectedRegex = /bigger than the original/ig
-
-        const res = checkFileSizeDiff("a", "b", spy)
-
-        expect(res).toMatch(expectedRegex)
-        expect(spy).toHaveBeenCalledWith(expect.stringMatching(expectedRegex))
     })
 })
