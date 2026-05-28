@@ -39,6 +39,15 @@ export const createFFmpegScripts = (
 ) => {
     const basename = path.parse(input).name
 
+    const hevcEncoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc"
+    const encoder = HEVC
+        ? ["-x265-params", "log-level=error", "-crf", "23", "-c:v", hevcEncoder, "-tag:v", "hvc1"]
+        : ["-crf", "18", "-c:v", "h264"]
+
+    const fps = FPS === 0
+        ? []
+        : ["-r", `${FPS}`]
+
     return timestampPairs.reduce((acc, ts, idx) => {
         let counter = idx + 1;
         const number = videoCounter(counter)
@@ -47,22 +56,9 @@ export const createFFmpegScripts = (
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
         if (videoSegments.includes(outputFilename)) return acc;
 
-        const encoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc"
-
         let cmd: string[] = ["-v", "warning", "-nostats", "-ss", ts[0]!, "-to", ts[1]!, "-i", input];
-
-        cmd = cmd.concat(
-            HEVC
-                ? ["-x265-params", "log-level=error", "-crf", "23", "-c:v", encoder, "-tag:v", "hvc1"]
-                : ["-crf", "18", "-c:v", "h264"]
-        )
-
-        cmd = cmd.concat(
-            FPS === 0
-                ? []
-                : ["-r", `${FPS}`]
-        )
-
+        cmd = cmd.concat(encoder)
+        cmd = cmd.concat(fps)
         cmd = cmd.concat([path.join(basename, outputFilename)])
 
         return [...acc, cmd]
