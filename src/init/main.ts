@@ -38,13 +38,13 @@ export const main = (args: MainArgs, addError: AddError) => {
         timestampPairs,
         videoSegments
     }
-    const ffmpegScripts: string[] = createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
+    const ffmpegScripts = createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
 
     console.log("\nExecuting FFmpeg. This may take a while. . .");
 
     const time1 = Date.now();
     ffmpegScripts.forEach((script) => {
-        console.log("\n" + script);
+        console.log(["\nffmpeg", ...script].join(" "));
         createVideoSegment(script, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
     });
     const elapsedTime = (Date.now() - time1) / 1000;

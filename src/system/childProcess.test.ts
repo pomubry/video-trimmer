@@ -1,9 +1,9 @@
 import path from "node:path";
-import {describe, expect, test, vi} from "vitest";
-import {fs} from "memfs";
+import { describe, expect, test, vi } from "vitest";
+import { fs } from "memfs";
 
-import {createVideoSegment, mergeVideoSegments, getVideoDuration} from "./childProcess.js";
-import {FFMPEG_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { createVideoSegment, mergeVideoSegments, getVideoDuration } from "./childProcess.js";
+import { FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 describe("createVideoSegment", () => {
     let baseName = "segment"
@@ -11,9 +11,10 @@ describe("createVideoSegment", () => {
     test("should create a file", () => {
         const filename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
         const fullPath = path.join(baseName, filename)
+        const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath]
         fs.mkdirSync(baseName)
 
-        createVideoSegment(`ffmpeg -i "${baseName}.mp4" -c:v otherOptions "${fullPath}"`, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+        createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
         const dir = fs.readdirSync(".");
         const dirItems = fs.readdirSync(baseName);
@@ -25,9 +26,10 @@ describe("createVideoSegment", () => {
         baseName = "あえいおうアエイオウ東京";
         const jpFilename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
         const fullPath = path.join(baseName, jpFilename)
+        const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath]
         fs.mkdirSync(baseName)
 
-        createVideoSegment(`ffmpeg -i "${baseName}.mp4" -c:v otherOptions "${fullPath}"`, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+        createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
 
         const dir = fs.readdirSync(".");
         const dirItems = fs.readdirSync(baseName);

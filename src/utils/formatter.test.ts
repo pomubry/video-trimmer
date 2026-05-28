@@ -44,11 +44,9 @@ describe("createFFmpegScripts", () => {
             videoSegments: []
         }
 
-        const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_001.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_002.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
-        ]
+        const ffmpegScripts = obj.timestampPairs.map((pair, idx) => {
+            return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
+        })
 
         expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
@@ -60,12 +58,12 @@ describe("createFFmpegScripts", () => {
             videoSegments: [`${basename}_002.${FILENAME_OPTIONS.EXTENSION_NAME}`]
         }
 
-        const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_001.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mp4`)}"`
-        ]
+        const ffmpegScripts = obj.timestampPairs.map((pair, idx) => {
+            if (idx === 1) return [];
+            return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
+        })
 
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts.filter(scr => scr.length > 0))
     })
 
     test("Should apply hevc encoding if set in config", () => {
@@ -75,11 +73,9 @@ describe("createFFmpegScripts", () => {
             videoSegments: []
         }
 
-        const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -x265-params log-level=error -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_001.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -x265-params log-level=error -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_002.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -x265-params log-level=error -crf 23 -c:v hevc -tag:v hvc1 "${path.join(basename, `${basename}_003.mp4`)}"`
-        ]
+        const ffmpegScripts = obj.timestampPairs.map((pair, idx) => {
+            return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-x265-params", "log-level=error", "-crf", "23", "-c:v", "hevc", "-tag:v", "hvc1", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
+        })
 
         vi.spyOn(FFMPEG_OPTIONS, "HEVC", "get").mockReturnValueOnce(true);
         expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
@@ -92,11 +88,9 @@ describe("createFFmpegScripts", () => {
             videoSegments: []
         }
 
-        const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 18 -c:v h264 -r 60 "${path.join(basename, `${basename}_001.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -crf 18 -c:v h264 -r 60 "${path.join(basename, `${basename}_002.mp4`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 -r 60 "${path.join(basename, `${basename}_003.mp4`)}"`
-        ]
+        const ffmpegScripts = obj.timestampPairs.map((pair, idx) => {
+            return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", "-r", "60", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
+        })
 
         vi.spyOn(FFMPEG_OPTIONS, "FPS", "get").mockReturnValueOnce(60);
         expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
@@ -109,11 +103,9 @@ describe("createFFmpegScripts", () => {
             videoSegments: []
         }
 
-        const ffmpegScripts = [
-            `ffmpeg -v warning -stats -ss 00:00:00.000 -to 00:01:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_001.mkv`)}"`,
-            `ffmpeg -v warning -stats -ss 00:02:00.000 -to 00:03:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_002.mkv`)}"`,
-            `ffmpeg -v warning -stats -ss 00:04:00.000 -to 00:05:00.000 -i "input.mp4" -crf 18 -c:v h264 "${path.join(basename, `${basename}_003.mkv`)}"`
-        ]
+        const ffmpegScripts = obj.timestampPairs.map((pair, idx) => {
+            return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mkv`)]
+        })
 
         vi.spyOn(FILENAME_OPTIONS, "EXTENSION_NAME", "get").mockReturnValue("mkv");
         expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
