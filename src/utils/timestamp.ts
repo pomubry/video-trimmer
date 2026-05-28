@@ -68,7 +68,7 @@ const getTimestampPair = (timestamp: string, offset: number) => {
     if (offset !== 0) {
         timestampPair = timestampPair.map((singleTs) => {
             let tsInSeconds = hmsToSeconds(singleTs);
-            return secondsToHms(tsInSeconds + FFMPEG_OPTIONS.OFFSET);
+            return secondsToHms(tsInSeconds + offset);
         });
     }
 
