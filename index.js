@@ -31,13 +31,15 @@ var import_node_path = __toESM(require("node:path"), 1);
 var import_node_child_process = require("node:child_process");
 var createVideoSegment = (args, execSyncOptions) => (0, import_node_child_process.spawnSync)("ffmpeg", args, execSyncOptions);
 var mergeVideoSegments = (segmentListFilename, outputFilename, execSyncOptions) => {
-    (0, import_node_child_process.execSync)(`ffmpeg -v warning -f concat -safe 0 -i ${segmentListFilename} -c copy "${outputFilename}"`, execSyncOptions);
+    const args = ["-v", "warning", "-f", "concat", "-safe", "0", "-i", segmentListFilename, "-c", "copy", outputFilename];
+    (0, import_node_child_process.spawnSync)(`ffmpeg`, args, execSyncOptions);
 };
-var getVideoDuration = (baseOutputPath, file) => Number(
-    (0, import_node_child_process.execSync)(
-        `ffprobe -v warning -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${import_node_path.default.join(baseOutputPath, file)}"`
-    ).toString()
-);
+var getVideoDuration = (baseOutputPath, file) => {
+    const fullPath = import_node_path.default.join(baseOutputPath, file);
+    const args = ["-v", "warning", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", fullPath];
+    const res = (0, import_node_child_process.spawnSync)("ffprobe", args, { encoding: "utf8" });
+    return Number(res.stdout);
+};
 
 // src/repositories/filesystem.ts
 var import_node_fs = __toESM(require("node:fs"), 1);
@@ -228,21 +230,19 @@ var videoCounter = (counter) => {
     }
     return number;
 };
-var createFFmpegScripts = ({ input, timestampPairs, videoSegments }, { FPS, HEVC }) => {
+var createFfmpegArgs = ({ input, timestampPairs, videoSegments }, { FPS, HEVC }) => {
     const basename = import_node_path2.default.parse(input).name;
+    const hevcEncoder = import_node_os.default.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
+    const encoder = HEVC ? ["-x265-params", "log-level=error", "-crf", "23", "-c:v", hevcEncoder, "-tag:v", "hvc1"] : ["-crf", "18", "-c:v", "h264"];
+    const fps = FPS === 0 ? [] : ["-r", `${FPS}`];
     return timestampPairs.reduce((acc, ts, idx) => {
         let counter = idx + 1;
         const number = videoCounter(counter);
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
         if (videoSegments.includes(outputFilename)) return acc;
-        const encoder = import_node_os.default.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
         let cmd = ["-v", "warning", "-nostats", "-ss", ts[0], "-to", ts[1], "-i", input];
-        cmd = cmd.concat(
-            HEVC ? ["-x265-params", "log-level=error", "-crf", "23", "-c:v", encoder, "-tag:v", "hvc1"] : ["-crf", "18", "-c:v", "h264"]
-        );
-        cmd = cmd.concat(
-            FPS === 0 ? [] : ["-r", `${FPS}`]
-        );
+        cmd = cmd.concat(encoder);
+        cmd = cmd.concat(fps);
         cmd = cmd.concat([import_node_path2.default.join(basename, outputFilename)]);
         return [...acc, cmd];
     }, []);
@@ -415,7 +415,7 @@ var main = (args, addError) => {
         timestampPairs,
         videoSegments
     };
-    const ffmpegScripts = createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS);
+    const ffmpegScripts = createFfmpegArgs(ffmpegArgs, FFMPEG_OPTIONS);
     console.log("\nExecuting FFmpeg. This may take a while. . .");
     const time1 = Date.now();
     ffmpegScripts.forEach((script) => {
@@ -447,7 +447,7 @@ ${greenText(outputFile)} has been created.`);
 DONE! Video output should be about ${sexagesimal} long. 
 Total processing time: ${sexagesimalFormat(elapsedTime)}
 ${fileSizeDiff}
-`
+        `
     );
     console.log("=".repeat(process.stdout.columns));
 };
@@ -507,19 +507,19 @@ try {
 } catch (e) {
     console.log(
         `
-= = = = = = = = = = H I N T S : = = = = = = = = = =
+    = = = = = = = = = = H I N T S : = = = = = = = = = =
 
-* Line 1 should be the video filename including its extension. 
-    Example: input.mp4.
+* Line 1 should be the video filename including its extension.
+        Example: input.mp4.
 
-* Timestamp format for each line (except Line 1) should be [timestamp1 timestamp2] without the brackets AND with a single space in between.
-    Example: 10:00:00.123456789 11:00:00.123456789
+* Timestamp format for each line(except Line 1) should be[timestamp1 timestamp2] without the brackets AND with a single space in between.
+        Example: 10:00:00.123456789 11:00:00.123456789
 
-* Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 
-    Example: 12:34:56.123456789
+            * Timestamp format should be in sexagesimal system and the seconds' format should be 3-9 decimal places long. 
+    Example: 12: 34: 56.123456789
 
-* Don't leave any empty lines.
-`
+        * Don't leave any empty lines.
+            `
     );
     console.error(e);
 }

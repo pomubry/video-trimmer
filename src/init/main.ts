@@ -10,7 +10,7 @@ import {
     removeVideoSegments
 } from "../system/filesystem.js";
 import {
-    createFFmpegScripts,
+    createFfmpegArgs,
     getVideoSegmentRegExp,
     greenText,
     outputFilenameFormatter,
@@ -38,7 +38,7 @@ export const main = (args: MainArgs, addError: AddError) => {
         timestampPairs,
         videoSegments
     }
-    const ffmpegScripts = createFFmpegScripts(ffmpegArgs, FFMPEG_OPTIONS)
+    const ffmpegScripts = createFfmpegArgs(ffmpegArgs, FFMPEG_OPTIONS)
 
     console.log("\nExecuting FFmpeg. This may take a while. . .");
 

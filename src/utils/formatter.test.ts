@@ -2,7 +2,7 @@ import path from "node:path"
 import { vi, describe, test, beforeEach, expect } from "vitest";
 
 import {
-    createFFmpegScripts,
+    createFfmpegArgs,
     getVideoSegmentRegExp,
     outputFilenameFormatter,
     removeIndent,
@@ -48,7 +48,7 @@ describe("createFFmpegScripts", () => {
             return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
         })
 
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFfmpegArgs(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Skip segments that are already created", () => {
@@ -63,7 +63,7 @@ describe("createFFmpegScripts", () => {
             return ["-v", "warning", "-nostats", "-ss", pair[0], "-to", pair[1], "-i", input, "-crf", "18", "-c:v", "h264", path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`)]
         })
 
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts.filter(scr => scr.length > 0))
+        expect(createFfmpegArgs(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts.filter(scr => scr.length > 0))
     })
 
     test("Should apply hevc encoding if set in config", () => {
@@ -78,7 +78,7 @@ describe("createFFmpegScripts", () => {
         })
 
         vi.spyOn(FFMPEG_OPTIONS, "HEVC", "get").mockReturnValueOnce(true);
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFfmpegArgs(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply framerate set in config", () => {
@@ -93,7 +93,7 @@ describe("createFFmpegScripts", () => {
         })
 
         vi.spyOn(FFMPEG_OPTIONS, "FPS", "get").mockReturnValueOnce(60);
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFfmpegArgs(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
     })
 
     test("Should apply the extension set in config", () => {
@@ -108,7 +108,7 @@ describe("createFFmpegScripts", () => {
         })
 
         vi.spyOn(FILENAME_OPTIONS, "EXTENSION_NAME", "get").mockReturnValue("mkv");
-        expect(createFFmpegScripts(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
+        expect(createFfmpegArgs(obj, FFMPEG_OPTIONS)).toEqual(ffmpegScripts)
 
         vi.restoreAllMocks()
         expect(FILENAME_OPTIONS.EXTENSION_NAME).toBe("mp4")

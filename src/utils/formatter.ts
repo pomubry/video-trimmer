@@ -33,7 +33,7 @@ export const videoCounter = (counter: number) => {
     return number
 }
 
-export const createFFmpegScripts = (
+export const createFfmpegArgs = (
     { input, timestampPairs, videoSegments }: FFmpegArguments,
     { FPS, HEVC }: FFmpegConfig
 ) => {
