@@ -6,17 +6,17 @@ import type { AddError } from "../types/index.js";
 
 export const checkVideoDurationErrors
     = (videoSegments: string[], videoSegmentDurations: number[], baseName: string, addError: AddError) =>
-        videoSegments.reduce((acc, file, index) => {
+        videoSegments.reduce<string[]>((acc, file, index) => {
             const durationInSeconds = getVideoDuration(baseName, file);
 
             if (videoSegmentDurations[index] === undefined) {
                 throw new Error(
-                    errorMsgFormatter(`Duration of video segment for index ${index} might be undefined.`)
+                    errorMsgFormatter(`Duration of video segment for index ${index.toString()} might be undefined.`)
                 )
             }
 
             const difference = Math.abs(videoSegmentDurations[index] - durationInSeconds);
-            const isGreaterThanOne = Number(difference) > 1;
+            const isGreaterThanOne = difference > 1;
 
             const message = removeIndent(`
         [${blueText(file)}] Duration: 
@@ -35,7 +35,7 @@ export const checkVideoDurationErrors
                 return [...acc, file]
             }
             return acc
-        }, [] as string[]);
+        }, []);
 
 export const checkFileSizeDiff = (oldFile: string, newFile: string, addError: AddError) => {
     const oldSize = getFileSize(oldFile);

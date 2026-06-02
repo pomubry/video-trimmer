@@ -102,6 +102,7 @@ describe("getMainArgs", () => {
                     "\n12:34:56.123456789 12:34:56.123456789\n", // Decline timestamp with newline 
                     "12:34:56.123456789\t12:34:56.123456789", // Decline timestamp with tab separator 
                     "12:34:56.123456789  12:34:56.123456789", // Decline timestamp with double space
+                    // eslint-disable-next-line no-useless-escape
                     "12:34:56.123456789\s12:34:56.123456789" // Decline timestamp with special char for whitespace
                 ]
 

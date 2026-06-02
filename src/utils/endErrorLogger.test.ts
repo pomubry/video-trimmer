@@ -12,7 +12,7 @@ describe("endErrorLogger", () => {
     test("should log errors", () => {
         const messages = ["error1", "error2", "error3"];
 
-        messages.forEach(message => endErrorLogger.addError(message));
+        messages.forEach(message => { endErrorLogger.addError(message); });
         endErrorLogger.logErrors();
 
         expect(spyError).toBeCalledTimes(3)

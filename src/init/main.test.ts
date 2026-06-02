@@ -60,7 +60,7 @@ describe("main function", () => {
         args = { ...argsInit }
     })
 
-    test("should create expected files", async () => {
+    test("should create expected files", () => {
         const spyLog = vi.spyOn(console, "log").mockImplementation(vi.fn())
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -87,7 +87,7 @@ describe("main function", () => {
         expect(spyLog).toHaveBeenCalledWith(expect.stringMatching(/saved .+\d+.+ mb/i))
     })
 
-    test("should not create timestamp copy", async () => {
+    test("should not create timestamp copy", () => {
         vi.spyOn(APP_OPTIONS, "KEEP_TIMESTAMP_COPY", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -102,7 +102,7 @@ describe("main function", () => {
         expect(files).toEqual(expect.arrayContaining(expectedFiles))
     })
 
-    test("should remove video segment folder", async () => {
+    test("should remove video segment folder", () => {
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
         const expectedFiles = [
             FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -118,7 +118,7 @@ describe("main function", () => {
         expect(files).not.toContain(baseName)
     })
 
-    test("should abort merging videos", async () => {
+    test("should abort merging videos", () => {
         vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue(errorFile);
         vi.spyOn(APP_OPTIONS, "IGNORE_ERRORS", "get").mockReturnValue(false);
         const logSpy = vi.spyOn(console, "log");

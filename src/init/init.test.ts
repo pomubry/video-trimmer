@@ -1,14 +1,14 @@
-import {beforeEach, describe, expect, type MockInstance, test, vi} from "vitest";
-import {fs} from "memfs";
+import { beforeEach, describe, expect, type MockInstance, test, vi } from "vitest";
+import { fs } from "memfs";
 
 import * as main from "./main.js";
 import * as childProcess from "../system/childProcess.js";
 import * as filesystem from "../system/filesystem.js";
-import {init} from "./init.js";
-import {EndErrorLogger} from "../utils/endErrorLogger.js";
-import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { init } from "./init.js";
+import { EndErrorLogger } from "../utils/endErrorLogger.js";
+import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type {MainArgs} from "../types/index.js";
+import type { MainArgs } from "../types/index.js";
 
 const baseName = "segment";
 const timestampPairs = [
@@ -18,8 +18,8 @@ const timestampPairs = [
     ["00:09:00.000", "00:13:00.000"],
     ["00:14:00.000", "00:19:00.000"]
 ];
-const modify20 = () => timestampPairs[2]![0] = "00:09:00.000"
-const reset20 = () => timestampPairs[2]![0] = "00:05:00.000"
+const modify20 = () => timestampPairs[2]![0] = "00:09:00.000" // eslint-disable-line @typescript-eslint/no-non-null-assertion
+const reset20 = () => timestampPairs[2]![0] = "00:05:00.000" // eslint-disable-line @typescript-eslint/no-non-null-assertion
 const videoSegmentDurations = [60, 120, 180, 240, 300];
 
 const createTimestamp = (videoFilename: string, timestampPairs: string[][]) =>
@@ -28,7 +28,7 @@ const createTimestamp = (videoFilename: string, timestampPairs: string[][]) =>
 
 const mockErrorFileSizeAndDuration = (arg: MainArgs, tsIndex: number, spyGetVideoDuration: MockInstance, spyGetFileSize: MockInstance) => {
     arg.timestampPairs.forEach((_, i) => {
-        let value = tsIndex === 1 && i + 1 === 5 ? ((i + 1) * 60) - 5 : (i + 1) * 60
+        const value = tsIndex === 1 && i + 1 === 5 ? ((i + 1) * 60) - 5 : (i + 1) * 60
         spyGetVideoDuration.mockReturnValueOnce(value)
     })
     spyGetFileSize
@@ -72,9 +72,9 @@ describe("init function", () => {
         const videoFilename = `${baseName}1.mp4`;
         const singleTimestamp = createTimestamp(videoFilename, timestampPairs)
 
-        test("should pass expected arguments", async () => {
+        test("should pass expected arguments", () => {
             const expectedArgs = getArgs(videoFilename);
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, { encoding: "utf-8" });
             fs.writeFileSync(videoFilename, "random");
 
             init(endErrorLogger);
@@ -86,7 +86,7 @@ describe("init function", () => {
 
         test("should log errors at the end", () => {
             spyMain.mockRestore();
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, { encoding: "utf-8" });
             const expectedArg = getArgs(videoFilename);
             mockErrorFileSizeAndDuration(expectedArg, 1, spyGetVideoDuration, spyGetFileSize)
 
@@ -97,23 +97,23 @@ describe("init function", () => {
             expect(spySuspend).toBeCalledTimes(1);
         })
 
-        test("should throw error", async () => {
+        test("should throw error", () => {
             modify20();
             const timestampWithError = createTimestamp(videoFilename, timestampPairs)
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, { encoding: "utf-8" });
 
-            expect(() => init(endErrorLogger)).toThrow(/timestamp errors/i);
+            expect(() => { init(endErrorLogger); }).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0);
         })
 
-        test("should rename video input and update timestamp", async () => {
+        test("should rename video input and update timestamp", () => {
             vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
             const baseName = "video with invalid character!";
             const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
             const newFile = baseName.slice(0, -1);
             const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
             const expectedArgs = getArgs(newFileName);
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, createTimestamp(baseFileName, timestampPairs), {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, createTimestamp(baseFileName, timestampPairs), { encoding: "utf-8" });
             fs.writeFileSync(baseFileName, "random");
 
             init(endErrorLogger)
@@ -137,8 +137,8 @@ describe("init function", () => {
         ]
             .join("\n@batch@\n")
 
-        test("should pass expected arguments", async () => {
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, {encoding: "utf-8"});
+        test("should pass expected arguments", () => {
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, { encoding: "utf-8" });
             const expectedArgs = [
                 getArgs(videoFilename1),
                 getArgs(videoFilename2),
@@ -159,7 +159,7 @@ describe("init function", () => {
 
         test("should log errors at the end", () => {
             spyMain.mockRestore();
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, { encoding: "utf-8" });
             const expectedArgs = [
                 getArgs(videoFilename1),
                 getArgs(videoFilename2),
@@ -177,7 +177,7 @@ describe("init function", () => {
             expect(spySuspend).toBeCalledTimes(1);
         })
 
-        test("should throw error", async () => {
+        test("should throw error", () => {
             modify20();
             const timestampWithError = [
                 createTimestamp(videoFilename1, timestampPairs),
@@ -186,20 +186,20 @@ describe("init function", () => {
             ]
                 .join("\n@batch@\n")
 
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestampWithError, { encoding: "utf-8" });
 
-            expect(() => init(endErrorLogger)).toThrow(/timestamp errors/i);
+            expect(() => { init(endErrorLogger); }).toThrow(/timestamp errors/i);
             expect(spySuspend).toBeCalledTimes(0)
         })
 
-        test("should rename multiple video input and update timestamp", async () => {
+        test("should rename multiple video input and update timestamp", () => {
             vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
             const input = [
                 "video1 with invalid character!",
                 "video2 with invalid character~",
                 "video3 with invalid character.",
             ]
-            let batchTimestamp: string[] = [];
+            const batchTimestamp: string[] = [];
             const expectedArgs = input.map((baseName, i) => {
                 const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
                 const newFile = baseName.slice(0, i === 2 ? undefined : -1);
@@ -211,7 +211,7 @@ describe("init function", () => {
                 return getArgs(newFileName);
             });
             const batchTimestampText = batchTimestamp.join("\n@batch@\n");
-            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestampText, {encoding: "utf-8"});
+            fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestampText, { encoding: "utf-8" });
 
             init(endErrorLogger)
 

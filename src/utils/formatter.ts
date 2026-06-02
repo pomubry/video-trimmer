@@ -11,23 +11,15 @@ export const greenText = (text: string) => coloredText("32m", text)
 export const blueText = (text: string) => coloredText("94m", text)
 export const purpleText = (text: string) => coloredText("35m", text)
 
-export const sexagesimalFormat = (durationInSeconds: number) => {
-    let hour = Math.floor(durationInSeconds / 3600);
-    let minute = Math.floor((durationInSeconds % 3600) / 60);
-    let seconds = (durationInSeconds % 3600) % 60;
-    return `${hour < 10 ? "0" + hour : hour}:${minute < 10 ? "0" + minute : minute
-        }:${seconds < 10 ? "0" + seconds.toFixed(4) : seconds.toFixed(3)}`;
-};
-
 export const videoCounter = (counter: number) => {
     let number = "";
 
     if (counter < 10) {
-        number = "00" + counter;
+        number = "00" + counter.toString();
     } else if (counter < 100) {
-        number = "0" + counter;
+        number = "0" + counter.toString();
     } else {
-        number += `${counter}`;
+        number += counter.toString();
     }
 
     return number
@@ -46,23 +38,28 @@ export const createFfmpegArgs = (
 
     const fps = FPS === 0
         ? []
-        : ["-r", `${FPS}`]
+        : ["-r", FPS.toString()]
 
-    return timestampPairs.reduce((acc, ts, idx) => {
-        let counter = idx + 1;
+    return timestampPairs.reduce<string[][]>((acc, ts, idx) => {
+        const counter = idx + 1;
         const number = videoCounter(counter)
 
         // Check first if the fileName already exists. If it does, skip.
         const outputFilename = `${basename}_${number}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
         if (videoSegments.includes(outputFilename)) return acc;
 
-        let cmd: string[] = ["-v", "warning", "-nostats", "-ss", ts[0]!, "-to", ts[1]!, "-i", input];
+        const ts0 = ts[0];
+        const ts1 = ts[1];
+        if (ts0 === undefined || ts1 === undefined)
+            throw new Error(errorMsgFormatter("Unexpected error: one of the timestamps is undefined."))
+
+        let cmd: string[] = ["-v", "warning", "-nostats", "-ss", ts0, "-to", ts1, "-i", input];
         cmd = cmd.concat(encoder)
         cmd = cmd.concat(fps)
         cmd = cmd.concat([path.join(basename, outputFilename)])
 
         return [...acc, cmd]
-    }, [] as string[][])
+    }, [])
 }
 
 export const getVideoSegmentRegExp = (nameOnly: string, extensionName: string) => {
@@ -75,11 +72,14 @@ export const outputFilenameFormatter = (basename: string) => `${basename} (Resul
 export const errorMsgFormatter = (message: string) => `\n${message}\n`
 
 export const removeIndent = (message: string) => {
-    const match = message.match(/\n([ \t]+)/);
+    const match = /\n([ \t]+)/.exec(message);
     let formatted = message;
 
     if (match) {
         const indent = match[1];
+        if (indent === undefined)
+            throw new Error(errorMsgFormatter("Unexpected error: matching pattern is undefined."))
+
         formatted = message.replace(new RegExp(`^${indent}`, 'gm'), '');
     }
 

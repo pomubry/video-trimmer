@@ -1,13 +1,7 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
-  "include": [
-    "./src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    ".idea",
-    "scripts"
-  ],
+  "include": ["./src/**/*", "./eslint.config.ts", "./vitest.config.ts"],
+  "exclude": ["node_modules", ".idea", "scripts"],
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",
@@ -18,12 +12,8 @@
     "target": "esnext",
     //    "types": [],
     // For nodejs:
-    "lib": [
-      "esnext"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["esnext"],
+    "types": ["node"],
     // and npm install -D @types/node
 
     // Other Outputs

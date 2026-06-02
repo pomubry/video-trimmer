@@ -9,7 +9,7 @@ describe("checkVideoDurationErrors", () => {
     const baseName = "randomVideo"
     const videoSegments = new Array(5)
         .fill(0)
-        .map((_, i) => `${baseName}_${i + 1}.mp4`)
+        .map((_, i) => `${baseName}_${(i + 1).toString()}.mp4`)
 
     test("should return empty array if no large disparity in duration was found", () => {
         const videoDuration = [0, 0, 0, 0, 0]
@@ -34,8 +34,8 @@ describe("checkVideoDurationErrors", () => {
     test("should log 3 okay and 2 errors", () => {
         const videoDuration = [1, 4, 5, 6, 10]
         const spyLog = vi.spyOn(console, "log").mockImplementation(vi.fn());
-        const okayString = expect.stringMatching(/okay/i);
-        const errorString = expect.stringMatching(/error/i);
+        const okayString = expect.stringMatching(/okay/i) as string;
+        const errorString = expect.stringMatching(/error/i) as string;
         vi.mocked(getVideoDuration).mockReturnValue(5);
 
         checkVideoDurationErrors(videoSegments, videoDuration, baseName, spy);

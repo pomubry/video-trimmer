@@ -1,10 +1,10 @@
-import {init} from "./init/init.js";
-import {purpleText} from "./utils/formatter.js";
-import {endErrorLogger} from "./utils/endErrorLogger.js";
-import {FFMPEG_OPTIONS} from "./config.js";
+import { init } from "./init/init.js";
+import { purpleText } from "./utils/formatter.js";
+import { endErrorLogger } from "./utils/endErrorLogger.js";
+import { FFMPEG_OPTIONS } from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
-    console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET} seconds`));
+    console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET.toFixed(3)} seconds`));
 }
 
 try {

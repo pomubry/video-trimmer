@@ -18,7 +18,7 @@ export class EndErrorLogger extends Error {
     }
 
     logErrors = () => {
-        this.#errors.forEach(error => console.error(error));
+        this.#errors.forEach(error => { console.error(error); });
     }
 }
 

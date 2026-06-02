@@ -1,21 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {blueText, errorMsgFormatter} from "../utils/formatter.js";
-import {APP_OPTIONS, FILENAME_OPTIONS} from "../config.js";
+import { blueText, errorMsgFormatter } from "../utils/formatter.js";
+import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 export const readTimestamps = () => {
-    let ts = "";
-
     try {
-        ts = fs.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
-    } catch (error) {
+        return fs.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
+    } catch {
         throw new Error(
             errorMsgFormatter(`The file [${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}] was not found!`)
         );
     }
-
-    return ts;
 }
 
 export const checkVideoFile = (videoFile: string) => {
@@ -48,12 +44,12 @@ export const removeOutputIfExists = (outputFile: string) => {
 
 export const removeVideoSegments = (baseName: string) => {
     if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
-        fs.rmSync(baseName, {recursive: true, force: true});
+        fs.rmSync(baseName, { recursive: true, force: true });
     }
 }
 
 export const createTimestampCopy = (outputFilename: string, content: string) => {
-    fs.writeFileSync(`${outputFilename}.txt`, `${content}`, {encoding: "utf-8"});
+    fs.writeFileSync(`${outputFilename}.txt`, content, { encoding: "utf-8" });
 };
 
 export const renameFile = (timestampArr: string[], newFilename: string) => {

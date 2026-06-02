@@ -50,11 +50,11 @@ describe("Video File Checker", () => {
     test("Should not throw an error if video is found", () => {
         const videoFile = "input.mp4"
         fs.writeFileSync(videoFile, randomText)
-        expect(() => checkVideoFile(videoFile)).not.toThrow()
+        expect(() => { checkVideoFile(videoFile); }).not.toThrow()
     })
 
     test("Should throw an error if video is not found", () => {
-        expect(() => checkVideoFile("non-existing-file.mp4")).toThrow(/was not found/i)
+        expect(() => { checkVideoFile("non-existing-file.mp4"); }).toThrow(/was not found/i)
     })
 })
 
@@ -84,8 +84,7 @@ describe("removeSegmentList", () => {
 
 describe("removeOutputIfExists", () => {
     beforeEach(() => {
-        vi.spyOn(console, "log").mockImplementation(() => {
-        })
+        vi.spyOn(console, "log").mockImplementation(vi.fn())
     })
 
     test("Should remove the output file if it exists", () => {
@@ -112,7 +111,7 @@ describe("removeOutputIfExists", () => {
     test("Should not throw if output file does not exists", () => {
         const outputFilename = outputFilenameFormatter(baseName);
 
-        expect(() => removeOutputIfExists(outputFilename)).not.toThrow();
+        expect(() => { removeOutputIfExists(outputFilename); }).not.toThrow();
     })
 })
 
@@ -125,7 +124,7 @@ describe("removeVideoSegments", () => {
         })
     })
 
-    test("Should remove the video segments", async () => {
+    test("Should remove the video segments", () => {
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
 
         expect(fs.readdirSync(".").length).toBe(1);
@@ -149,7 +148,7 @@ describe("removeVideoSegments", () => {
         expect(res.length).toBe(1);
     })
 
-    test("Should keep the video segments", async () => {
+    test("Should keep the video segments", () => {
         vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true)
 
         expect(fs.readdirSync(".").length).toBe(1);

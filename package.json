@@ -5,7 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "test": "npx tsc && vitest",
-    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js",
+    "lint": "eslint ."
   },
   "type": "module",
   "repository": {
@@ -18,10 +19,14 @@
   },
   "homepage": "https://github.com/pomubry/video-trimmer#readme",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.7.2",
     "esbuild": "0.25.11",
+    "eslint": "^10.4.1",
+    "jiti": "^2.7.0",
     "memfs": "^4.51.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.60.0",
     "vitest": "^3.2.4"
   }
 }

@@ -80,8 +80,9 @@ export const main = (args: MainArgs, addError: AddError) => {
 
     removeVideoSegments(baseName);
 
-    APP_OPTIONS.KEEP_TIMESTAMP_COPY && createTimestampCopy(baseName, args.timestamp);
-
+    if (APP_OPTIONS.KEEP_TIMESTAMP_COPY) {
+        createTimestampCopy(baseName, args.timestamp);
+    }
     const hms = secondsToHms(totalTime);
     const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
 

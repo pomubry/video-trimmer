@@ -25,7 +25,8 @@ export const init = (endErrorLogger: EndErrorLogger) => {
             if (timestampBatch[i] === undefined)
                 throw new Error(
                     errorMsgFormatter(
-                        `Index ${i} of the timestamp batch is undefined.${timestampBatch}`
+                        `Index ${i.toString()} of the timestamp batch is undefined.
+                        ${timestampBatch}` // eslint-disable-line @typescript-eslint/restrict-template-expressions
                     )
                 )
 
