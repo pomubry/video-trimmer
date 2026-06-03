@@ -5,7 +5,21 @@
   "main": "index.ts",
   "scripts": {
     "test": "npx tsc && vitest",
-    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*.{ts}": [
+      "prettier --write",
+      "eslint --fix",
+      "tsc",
+      "vitest run",
+      "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
+    ],
+    "**/*.{json,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "type": "module",
   "repository": {
@@ -23,7 +37,9 @@
     "esbuild": "0.25.11",
     "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "jiti": "^2.7.0",
+    "lint-staged": "^17.0.7",
     "memfs": "^4.51.1",
     "prettier": "3.8.3",
     "typescript": "^5.9.3",
