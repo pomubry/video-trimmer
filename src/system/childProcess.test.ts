@@ -2,61 +2,69 @@ import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import { fs } from "memfs";
 
-import { createVideoSegment, mergeVideoSegments, getVideoDuration } from "./childProcess.js";
+import {
+  createVideoSegment,
+  mergeVideoSegments,
+  getVideoDuration,
+} from "./childProcess.js";
 import { FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 describe("createVideoSegment", () => {
-    let baseName = "segment"
+  let baseName = "segment";
 
-    test("should create a file", () => {
-        const filename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
-        const fullPath = path.join(baseName, filename)
-        const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath]
-        fs.mkdirSync(baseName)
+  test("should create a file", () => {
+    const filename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+    const fullPath = path.join(baseName, filename);
+    const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath];
+    fs.mkdirSync(baseName);
 
-        createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+    createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
 
-        const dir = fs.readdirSync(".");
-        const dirItems = fs.readdirSync(baseName);
-        expect(dir).toContain(baseName)
-        expect(dirItems).toContain(filename)
-    })
+    const dir = fs.readdirSync(".");
+    const dirItems = fs.readdirSync(baseName);
+    expect(dir).toContain(baseName);
+    expect(dirItems).toContain(filename);
+  });
 
-    test("should accept japanese characters in input file", () => {
-        baseName = "あえいおうアエイオウ東京";
-        const jpFilename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`
-        const fullPath = path.join(baseName, jpFilename)
-        const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath]
-        fs.mkdirSync(baseName)
+  test("should accept japanese characters in input file", () => {
+    baseName = "あえいおうアエイオウ東京";
+    const jpFilename = `${baseName}_001.${FILENAME_OPTIONS.EXTENSION_NAME}`;
+    const fullPath = path.join(baseName, jpFilename);
+    const args = ["-i", `${baseName}.mp4`, "-c:v", "otherOptions", fullPath];
+    fs.mkdirSync(baseName);
 
-        createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+    createVideoSegment(args, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS);
 
-        const dir = fs.readdirSync(".");
-        const dirItems = fs.readdirSync(baseName);
-        expect(dir).toContain(baseName)
-        expect(dirItems).toContain(jpFilename)
-        baseName = "segment";
-    })
-})
+    const dir = fs.readdirSync(".");
+    const dirItems = fs.readdirSync(baseName);
+    expect(dir).toContain(baseName);
+    expect(dirItems).toContain(jpFilename);
+    baseName = "segment";
+  });
+});
 
 describe("mergeVideoSegments", () => {
-    test("should create a file", () => {
-        const filename = `sample (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`
+  test("should create a file", () => {
+    const filename = `sample (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
 
-        mergeVideoSegments(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, filename, FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS)
+    mergeVideoSegments(
+      FILENAME_OPTIONS.SEGMENT_LIST_FILENAME,
+      filename,
+      FFMPEG_OPTIONS.EXEC_SYNC_OPTIONS,
+    );
 
-        const dir = fs.readdirSync(".");
-        expect(dir).toContain(filename)
-    })
-})
+    const dir = fs.readdirSync(".");
+    expect(dir).toContain(filename);
+  });
+});
 
 describe("getVideoDuration", () => {
-    test("should throw an error", () => {
-        expect(() => getVideoDuration("abc", "def")).toThrow();
-    })
+  test("should throw an error", () => {
+    expect(() => getVideoDuration("abc", "def")).toThrow();
+  });
 
-    test("should be properly mocked", () => {
-        vi.mocked(getVideoDuration).mockReturnValueOnce(123);
-        expect(getVideoDuration("abc", "def")).toBe(123);
-    })
-})
+  test("should be properly mocked", () => {
+    vi.mocked(getVideoDuration).mockReturnValueOnce(123);
+    expect(getVideoDuration("abc", "def")).toBe(123);
+  });
+});

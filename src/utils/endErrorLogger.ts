@@ -1,25 +1,27 @@
 export class EndErrorLogger extends Error {
-    #errors: string[] = [];
+  #errors: string[] = [];
 
-    constructor() {
-        super();
+  constructor() {
+    super();
 
-        this.name = this.constructor.name;
-        this.#errors = [];
+    this.name = this.constructor.name;
+    this.#errors = [];
 
-        // (Node.js/V8 only) Remove the constructor from the stack trace
-        // if (Error.captureStackTrace) {
-        //     Error.captureStackTrace(this, this.constructor);
-        // }
-    }
+    // (Node.js/V8 only) Remove the constructor from the stack trace
+    // if (Error.captureStackTrace) {
+    //     Error.captureStackTrace(this, this.constructor);
+    // }
+  }
 
-    addError = (error: string) => {
-        this.#errors.push(error);
-    }
+  addError = (error: string) => {
+    this.#errors.push(error);
+  };
 
-    logErrors = () => {
-        this.#errors.forEach(error => { console.error(error); });
-    }
+  logErrors = () => {
+    this.#errors.forEach((error) => {
+      console.error(error);
+    });
+  };
 }
 
 export const endErrorLogger = new EndErrorLogger();

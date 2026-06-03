@@ -1,184 +1,201 @@
 import path from "node:path";
-import { vi, describe, test, beforeEach, expect } from 'vitest'
+import { vi, describe, test, beforeEach, expect } from "vitest";
 import { fs } from "memfs";
 
 import {
-    checkVideoFile,
-    createSegmentList,
-    createTimestampCopy,
-    readTimestamps,
-    removeOutputIfExists,
-    removeSegmentList,
-    removeVideoSegments,
-    renameFile
+  checkVideoFile,
+  createSegmentList,
+  createTimestampCopy,
+  readTimestamps,
+  removeOutputIfExists,
+  removeSegmentList,
+  removeVideoSegments,
+  renameFile,
 } from "./filesystem.js";
-import { outputFilenameFormatter, removeIndent, videoCounter } from "../utils/formatter.js";
+import {
+  outputFilenameFormatter,
+  removeIndent,
+  videoCounter,
+} from "../utils/formatter.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-const baseName = "input"
+const baseName = "input";
 const videoSegments = new Array(3)
-    .fill(0)
-    .map((_, i) => `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)
-const newTimestampFilename = "otherFile.txt"
-const randomText = "some text"
+  .fill(0)
+  .map(
+    (_, i) =>
+      `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`,
+  );
+const newTimestampFilename = "otherFile.txt";
+const randomText = "some text";
 
 describe("Timestamp reader", () => {
-    test("Should read the timestamp file", () => {
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
+  test("Should read the timestamp file", () => {
+    fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
 
-        const res = readTimestamps();
+    const res = readTimestamps();
 
-        expect(res).toBe(randomText)
-    })
+    expect(res).toBe(randomText);
+  });
 
-    test("Should read a different file according to config", () => {
-        vi.spyOn(FILENAME_OPTIONS, "TIMESTAMPS_FILENAME", "get").mockReturnValue(newTimestampFilename)
-        fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
+  test("Should read a different file according to config", () => {
+    vi.spyOn(FILENAME_OPTIONS, "TIMESTAMPS_FILENAME", "get").mockReturnValue(
+      newTimestampFilename,
+    );
+    fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
 
-        const res = readTimestamps();
+    const res = readTimestamps();
 
-        expect(FILENAME_OPTIONS.TIMESTAMPS_FILENAME).toBe(newTimestampFilename)
-        expect(res).toBe(randomText)
-    })
+    expect(FILENAME_OPTIONS.TIMESTAMPS_FILENAME).toBe(newTimestampFilename);
+    expect(res).toBe(randomText);
+  });
 
-    test("Should throw a custom error message", () => {
-        expect(() => readTimestamps()).toThrow(/was not found/)
-    })
-})
+  test("Should throw a custom error message", () => {
+    expect(() => readTimestamps()).toThrow(/was not found/);
+  });
+});
 
 describe("Video File Checker", () => {
-    test("Should not throw an error if video is found", () => {
-        const videoFile = "input.mp4"
-        fs.writeFileSync(videoFile, randomText)
-        expect(() => { checkVideoFile(videoFile); }).not.toThrow()
-    })
+  test("Should not throw an error if video is found", () => {
+    const videoFile = "input.mp4";
+    fs.writeFileSync(videoFile, randomText);
+    expect(() => {
+      checkVideoFile(videoFile);
+    }).not.toThrow();
+  });
 
-    test("Should throw an error if video is not found", () => {
-        expect(() => { checkVideoFile("non-existing-file.mp4"); }).toThrow(/was not found/i)
-    })
-})
+  test("Should throw an error if video is not found", () => {
+    expect(() => {
+      checkVideoFile("non-existing-file.mp4");
+    }).toThrow(/was not found/i);
+  });
+});
 
 describe("createSegmentList", () => {
-    test("Should create a list of video segments", () => {
-        const expectedText = removeIndent(`file '${path.join(baseName, `${baseName}_${videoCounter(1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
+  test("Should create a list of video segments", () => {
+    const expectedText =
+      removeIndent(`file '${path.join(baseName, `${baseName}_${videoCounter(1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
         file '${path.join(baseName, `${baseName}_${videoCounter(2)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'
-        file '${path.join(baseName, `${baseName}_${videoCounter(3)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'`
-        )
+        file '${path.join(baseName, `${baseName}_${videoCounter(3)}.${FILENAME_OPTIONS.EXTENSION_NAME}`)}'`);
 
-        createSegmentList(videoSegments, baseName);
+    createSegmentList(videoSegments, baseName);
 
-        const res = fs.readFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, { encoding: "utf-8" });
-        expect(res).toBe(expectedText);
-    })
-})
+    const res = fs.readFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, {
+      encoding: "utf-8",
+    });
+    expect(res).toBe(expectedText);
+  });
+});
 
 describe("removeSegmentList", () => {
-    test("Should remove the segment list file", () => {
-        fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, randomText);
+  test("Should remove the segment list file", () => {
+    fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, randomText);
 
-        removeSegmentList();
+    removeSegmentList();
 
-        expect(fs.readdirSync(".").length).toBe(0);
-    })
-})
+    expect(fs.readdirSync(".").length).toBe(0);
+  });
+});
 
 describe("removeOutputIfExists", () => {
-    beforeEach(() => {
-        vi.spyOn(console, "log").mockImplementation(vi.fn())
-    })
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(vi.fn());
+  });
 
-    test("Should remove the output file if it exists", () => {
-        const outputFilename = outputFilenameFormatter(baseName);
-        fs.writeFileSync(outputFilename, randomText);
+  test("Should remove the output file if it exists", () => {
+    const outputFilename = outputFilenameFormatter(baseName);
+    fs.writeFileSync(outputFilename, randomText);
 
-        removeOutputIfExists(outputFilename);
+    removeOutputIfExists(outputFilename);
 
-        const res = fs.readdirSync(".")
-        expect(res.length).toBe(0);
-    })
+    const res = fs.readdirSync(".");
+    expect(res.length).toBe(0);
+  });
 
-    test("Should keep other files", () => {
-        const outputFilename = outputFilenameFormatter(baseName);
-        fs.writeFileSync(outputFilename, randomText);
-        fs.writeFileSync("otherFile.txt", randomText);
+  test("Should keep other files", () => {
+    const outputFilename = outputFilenameFormatter(baseName);
+    fs.writeFileSync(outputFilename, randomText);
+    fs.writeFileSync("otherFile.txt", randomText);
 
-        removeOutputIfExists(outputFilename);
+    removeOutputIfExists(outputFilename);
 
-        const res = fs.readdirSync(".")
-        expect(res.length).toBe(1);
-    })
+    const res = fs.readdirSync(".");
+    expect(res.length).toBe(1);
+  });
 
-    test("Should not throw if output file does not exists", () => {
-        const outputFilename = outputFilenameFormatter(baseName);
+  test("Should not throw if output file does not exists", () => {
+    const outputFilename = outputFilenameFormatter(baseName);
 
-        expect(() => { removeOutputIfExists(outputFilename); }).not.toThrow();
-    })
-})
+    expect(() => {
+      removeOutputIfExists(outputFilename);
+    }).not.toThrow();
+  });
+});
 
 describe("removeVideoSegments", () => {
-    beforeEach(() => {
-        fs.mkdirSync(baseName)
-        videoSegments.forEach(segment => {
-            const file = path.join(baseName, segment)
-            fs.writeFileSync(file, randomText)
-        })
-    })
+  beforeEach(() => {
+    fs.mkdirSync(baseName);
+    videoSegments.forEach((segment) => {
+      const file = path.join(baseName, segment);
+      fs.writeFileSync(file, randomText);
+    });
+  });
 
-    test("Should remove the video segments", () => {
-        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
+  test("Should remove the video segments", () => {
+    vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false);
 
-        expect(fs.readdirSync(".").length).toBe(1);
-        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    expect(fs.readdirSync(".").length).toBe(1);
+    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
 
-        removeVideoSegments(baseName);
+    removeVideoSegments(baseName);
 
-        expect(fs.readdirSync(".").length).toBe(0);
-    })
+    expect(fs.readdirSync(".").length).toBe(0);
+  });
 
-    test("Should keep other files", () => {
-        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false)
-        fs.writeFileSync("otherFile.txt", randomText);
+  test("Should keep other files", () => {
+    vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false);
+    fs.writeFileSync("otherFile.txt", randomText);
 
-        expect(fs.readdirSync(".").length).toBe(2);
-        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    expect(fs.readdirSync(".").length).toBe(2);
+    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
 
-        removeVideoSegments(baseName);
+    removeVideoSegments(baseName);
 
-        const res = fs.readdirSync(".")
-        expect(res.length).toBe(1);
-    })
+    const res = fs.readdirSync(".");
+    expect(res.length).toBe(1);
+  });
 
-    test("Should keep the video segments", () => {
-        vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true)
+  test("Should keep the video segments", () => {
+    vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true);
 
-        expect(fs.readdirSync(".").length).toBe(1);
-        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    expect(fs.readdirSync(".").length).toBe(1);
+    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
 
-        removeVideoSegments(baseName);
+    removeVideoSegments(baseName);
 
-        expect(fs.readdirSync(".").length).toBe(1);
-        expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
-    })
-})
+    expect(fs.readdirSync(".").length).toBe(1);
+    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+  });
+});
 
 describe("createTimestampCopy", () => {
-    test("Should create a copy of the timestamp", () => {
-        createTimestampCopy(baseName, randomText);
+  test("Should create a copy of the timestamp", () => {
+    createTimestampCopy(baseName, randomText);
 
-        expect(fs.readdirSync(".")).toContain(baseName + ".txt")
-    })
-})
+    expect(fs.readdirSync(".")).toContain(baseName + ".txt");
+  });
+});
 
 describe("renameFile", () => {
-    test("Should rename a file", () => {
-        const oldName = "oldName.txt"
-        const timestampArr = [oldName]
-        const newName = "newName.txt"
-        fs.writeFileSync(oldName, randomText)
+  test("Should rename a file", () => {
+    const oldName = "oldName.txt";
+    const timestampArr = [oldName];
+    const newName = "newName.txt";
+    fs.writeFileSync(oldName, randomText);
 
-        renameFile(timestampArr, newName);
+    renameFile(timestampArr, newName);
 
-        const res = fs.readFileSync(newName, { encoding: "utf-8" });
-        expect(res).toBe(randomText)
-    })
-})
+    const res = fs.readFileSync(newName, { encoding: "utf-8" });
+    expect(res).toBe(randomText);
+  });
+});

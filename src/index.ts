@@ -4,13 +4,15 @@ import { endErrorLogger } from "./utils/endErrorLogger.js";
 import { FFMPEG_OPTIONS } from "./config.js";
 
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
-    console.log(purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET.toFixed(3)} seconds`));
+  console.log(
+    purpleText(`Offset Value: ${FFMPEG_OPTIONS.OFFSET.toFixed(3)} seconds`),
+  );
 }
 
 try {
-    init(endErrorLogger)
+  init(endErrorLogger);
 } catch (e) {
-    console.log(`
+  console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =
 
 * Line 1 should be the video filename including its extension. 
@@ -23,7 +25,6 @@ try {
     Example: 12:34:56.123456789
 
 * Don't leave any empty lines.
-`
-    )
-    console.error(e);
+`);
+  console.error(e);
 }
