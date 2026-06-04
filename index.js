@@ -106,6 +106,16 @@ var import_node_path3 = __toESM(require("node:path"), 1);
 // src/utils/formatter.ts
 var import_node_path2 = __toESM(require("node:path"), 1);
 var import_node_os = __toESM(require("node:os"), 1);
+
+// src/utils/errors/unexpectedError.ts
+var UnexpectedError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "UnexpectedError";
+  }
+};
+
+// src/utils/formatter.ts
 var coloredText = (colorCode, message) => `\x1B[${colorCode}${message}\x1B[0m`;
 var redText = (text) => coloredText("31m", text);
 var greenText = (text) => coloredText("32m", text);
@@ -144,10 +154,11 @@ var createFfmpegArgs = ({ input, timestampPairs, videoSegments }, { FPS, HEVC })
     const ts0 = ts[0];
     const ts1 = ts[1];
     if (ts0 === void 0 || ts1 === void 0)
-      throw new Error(
-        errorMsgFormatter(
-          "Unexpected error: one of the timestamps is undefined."
-        )
+      throw new UnexpectedError(
+        removeIndent(`
+          One of the timestamps is undefined:
+            1st: ${ts0 ?? "undefined"}
+            2nd: ${ts1 ?? "undefined"}`)
       );
     let cmd = [
       "-v",
@@ -292,28 +303,6 @@ var import_node_path4 = __toESM(require("node:path"), 1);
 var timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}";
 var timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 var specialCharsRegex = /[`~!@#$%^&*()=[\]{}\\|;:'",<>?]/g;
-var checkDuplicateTimestamp = (prevTimestamp, timestamp1, idx) => {
-  const prevTimestamp2 = prevTimestamp.split(/\s/)[1];
-  if (prevTimestamp2 === void 0 && idx > 1) {
-    return {
-      isDuplicate: true,
-      message: `
-The 2nd timestamp from line ${idx.toString()} might be undefined.`
-    };
-  }
-  if (timestamp1 === prevTimestamp2) {
-    return {
-      isDuplicate: true,
-      message: removeIndent(`
-            Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
-                --- Two instances of timestamp [${timestamp1}] were found.`)
-    };
-  }
-  return {
-    isDuplicate: false,
-    message: ``
-  };
-};
 var hmsToSeconds = (sexagesimal) => {
   const timeArr = sexagesimal.split(":");
   return timeArr.reduce(
@@ -331,63 +320,73 @@ var getTimestampPair = (timestamp, offset) => {
   }
   return timestampPair;
 };
-var processTimestamps = (timestampArr) => {
-  let tsError = false;
-  let totalTime = 0;
-  const videoSegmentDurations = [];
-  let videoFilename = "";
-  if (timestampArr.length <= 1) {
-    tsError = true;
-    console.error("Unexpected error: Timestamp array is empty.");
-  }
-  const timestampPairs = timestampArr.reduce(
-    (acc, timestamp, idx) => {
-      if (idx === 0) {
-        videoFilename = timestamp;
-        return [];
-      }
-      if (timestamp === "" && idx === timestampArr.length - 1) return acc;
-      if (timestampRegex.test(timestamp)) {
-        const timestamps = timestamp.split(/\s/g);
-        const timestamp1 = hmsToSeconds(timestamps[0]);
-        const timestamp2 = hmsToSeconds(timestamps[1]);
-        if (timestamp2 <= timestamp1) {
-          tsError = true;
-          const unindent = removeIndent(`
-                Timestamp duration error at line ${(idx + 1).toString()}:
-                    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`);
-          console.error(unindent);
-          return acc;
-        }
-        const prevTimestamp = timestampArr[idx - 1];
-        if (prevTimestamp === void 0)
-          throw new Error(
-            errorMsgFormatter(
-              "Unexpected error: Previous timestamp is undefined."
-            )
-          );
-        const res = checkDuplicateTimestamp(prevTimestamp, timestamps[0], idx);
-        if (res.isDuplicate) {
-          tsError = true;
-          console.error(res.message);
-          return acc;
-        }
-        totalTime += timestamp2 - timestamp1;
-        videoSegmentDurations.push(timestamp2 - timestamp1);
-        return [...acc, getTimestampPair(timestamp, FFMPEG_OPTIONS.OFFSET)];
-      } else {
-        tsError = true;
-        console.error(
-          `
-Invalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`
-        );
-        return acc;
-      }
-    },
-    []
-  );
-  if (tsError)
+var logAndThrowErrors = (tsError) => {
+  if (tsError.length > 0) {
+    tsError.forEach((err) => {
+      console.error(err);
+    });
     throw new Error(errorMsgFormatter("Timestamp errors were found."));
+  }
+};
+var wrongOrderFilter = ({ hms1, hms2, seconds1, seconds2 }, idx) => {
+  if (seconds2 <= seconds1) {
+    const unindent = removeIndent(`
+      Timestamp duration error at line ${(idx + 1).toString()}:
+          --- Timestamp [${hms2}] should be greater than [${hms1}].`);
+    return unindent;
+  }
+};
+var duplicateTimestampFilter = ({ hms1 }, idx, timestampArr) => {
+  const prevHms = timestampArr[idx - 1];
+  if (prevHms === void 0)
+    throw new UnexpectedError("Previous timestamp is undefined.");
+  const prevHms2 = prevHms.split(/\s/)[1];
+  if (prevHms2 === void 0 && idx > 1)
+    throw new UnexpectedError(
+      `
+The 2nd timestamp from line ${idx.toString()} might be undefined.`
+    );
+  if (hms1 === prevHms2) {
+    return removeIndent(`
+      Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
+          --- Two instances of timestamp [${hms1}] were found.`);
+  }
+};
+var filters = [wrongOrderFilter, duplicateTimestampFilter];
+var processTimestamps = (timestampArr) => {
+  const timestampErrors = [];
+  const videoSegmentDurations = [];
+  const timestampPairs = [];
+  const videoFilename = timestampArr[0];
+  if (videoFilename === void 0)
+    throw new UnexpectedError("Video filename is undefined.");
+  for (const [idx, timestamp] of timestampArr.entries()) {
+    if (idx === 0) continue;
+    if (timestamp === "" && idx === timestampArr.length - 1) continue;
+    if (!timestampRegex.test(timestamp)) {
+      timestampErrors.push(
+        `
+Invalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`
+      );
+      continue;
+    }
+    const [hms1, hms2] = timestamp.split(/\s/g);
+    const seconds1 = hmsToSeconds(hms1);
+    const seconds2 = hmsToSeconds(hms2);
+    const timestampFormats = { hms1, hms2, seconds1, seconds2 };
+    const hasError = filters.some((filter) => {
+      const errorMessage = filter(timestampFormats, idx, timestampArr);
+      if (errorMessage !== void 0) {
+        timestampErrors.push(errorMessage);
+        return true;
+      }
+    });
+    if (hasError) continue;
+    videoSegmentDurations.push(seconds2 - seconds1);
+    timestampPairs.push(getTimestampPair(timestamp, FFMPEG_OPTIONS.OFFSET));
+  }
+  logAndThrowErrors(timestampErrors);
+  const totalTime = videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 };
 var checkFileExtension = (videoFilename) => {

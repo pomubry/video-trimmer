@@ -90,9 +90,7 @@ describe("getMainArgs", () => {
         ];
 
         validTimestamps.forEach((timestamp) => {
-          expect(() =>
-            getMainArgs([...timestampArr, timestamp]),
-          ).not.toThrowError();
+          expect(() => getMainArgs([...timestampArr, timestamp])).not.toThrow();
         });
       });
 
@@ -111,7 +109,7 @@ describe("getMainArgs", () => {
         errors.forEach((error) => {
           const spy = vi.spyOn(console, "error").mockImplementation(vi.fn());
 
-          expect(() => getMainArgs([...timestampArr, error])).toThrowError(
+          expect(() => getMainArgs([...timestampArr, error])).toThrow(
             /timestamp errors/i,
           );
           expect(spy).toHaveBeenCalledWith(
@@ -121,29 +119,31 @@ describe("getMainArgs", () => {
       });
     });
 
-    test("should log an error if the first timestamp is greater than the second", () => {
-      const timestampArr = [
-        inputVideo,
-        "00:00:00.000 00:01:00.000",
-        "00:05:00.000 00:04:00.000",
-        "00:05:00.000 00:08:00.000",
-      ];
+    describe("wrongOrderFilter", () => {
+      test("should log an error if the first timestamp is greater than the second", () => {
+        const timestampArr = [
+          inputVideo,
+          "00:00:00.000 00:01:00.000",
+          "00:05:00.000 00:04:00.000",
+          "00:05:00.000 00:08:00.000",
+        ];
 
-      const spy = vi.spyOn(console, "error").mockImplementation(vi.fn());
+        const spy = vi.spyOn(console, "error").mockImplementation(vi.fn());
 
-      expect(() => getMainArgs(timestampArr)).toThrowError(/timestamp errors/i);
-      expect(spy).toHaveBeenCalledOnce();
-      expect(spy).toHaveBeenCalledWith(
-        expect.stringMatching(/timestamp duration error at line 3/i),
-      );
-      expect(spy).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /Timestamp \[00:04:00.000] should be greater than \[00:05:00.000]/i,
-        ),
-      );
+        expect(() => getMainArgs(timestampArr)).toThrow(/timestamp errors/i);
+        expect(spy).toHaveBeenCalledOnce();
+        expect(spy).toHaveBeenCalledWith(
+          expect.stringMatching(/timestamp duration error at line 3/i),
+        );
+        expect(spy).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /Timestamp \[00:04:00.000] should be greater than \[00:05:00.000]/i,
+          ),
+        );
+      });
     });
 
-    describe("checkDuplicateTimestamp", () => {
+    describe("duplicateTimestampFilter", () => {
       test("should log an error if the first timestamp is equal the second timestamp of the previous iteration", () => {
         const timestampArr = [
           inputVideo,
@@ -154,9 +154,7 @@ describe("getMainArgs", () => {
 
         const spy = vi.spyOn(console, "error").mockImplementation(vi.fn());
 
-        expect(() => getMainArgs(timestampArr)).toThrowError(
-          /timestamp errors/i,
-        );
+        expect(() => getMainArgs(timestampArr)).toThrow(/timestamp errors/i);
         expect(spy).toHaveBeenCalledOnce();
         expect(spy).toHaveBeenCalledWith(
           expect.stringMatching(/(?=.*duplicate)(?=.*line 3 and line 4)/i),

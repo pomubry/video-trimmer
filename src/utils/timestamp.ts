@@ -2,53 +2,29 @@ import path from "node:path";
 
 import { checkVideoFile } from "../system/filesystem.js";
 import { errorMsgFormatter, greenText, removeIndent } from "./formatter.js";
+import { UnexpectedError } from "./errors/unexpectedError.js";
 import { APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 import type { MainArgs } from "../types/index.js";
+
+interface TimestampFormats {
+  hms1: string;
+  hms2: string;
+  seconds1: number;
+  seconds2: number;
+}
+
+type FilterFunc = (
+  timestampFormats: TimestampFormats,
+  idx: number,
+  timestampArr: string[],
+) => string | undefined;
 
 // Timestamp in HMS format: '12:34:56.123456789 12:34:56.123456789'
 const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
 const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 
 const specialCharsRegex = /[`~!@#$%^&*()=[\]{}\\|;:'",<>?]/g;
-
-/*
-Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
-i.e.,
-"00:01:00.000000000 00:05:00.000000000"
-"00:05:00.00000000 00:10:00.000000000"
-will give an error.
-*/
-const checkDuplicateTimestamp = (
-  prevTimestamp: string,
-  timestamp1: string,
-  idx: number,
-): {
-  isDuplicate: boolean;
-  message: string;
-} => {
-  const prevTimestamp2 = prevTimestamp.split(/\s/)[1];
-  if (prevTimestamp2 === undefined && idx > 1) {
-    return {
-      isDuplicate: true,
-      message: `\nThe 2nd timestamp from line ${idx.toString()} might be undefined.`,
-    };
-  }
-
-  if (timestamp1 === prevTimestamp2) {
-    return {
-      isDuplicate: true,
-      message: removeIndent(`
-            Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
-                --- Two instances of timestamp [${timestamp1}] were found.`),
-    };
-  }
-
-  return {
-    isDuplicate: false,
-    message: ``,
-  };
-};
 
 const hmsToSeconds = (sexagesimal: string) => {
   const timeArr = sexagesimal.split(":");
@@ -75,77 +51,97 @@ const getTimestampPair = (timestamp: string, offset: number) => {
   return timestampPair;
 };
 
-const processTimestamps = (timestampArr: string[]) => {
-  let tsError = false;
-  let totalTime = 0;
-  const videoSegmentDurations: number[] = [];
-  let videoFilename = "";
+const logAndThrowErrors = (tsError: string[]) => {
+  if (tsError.length > 0) {
+    tsError.forEach((err) => {
+      console.error(err);
+    });
+    throw new Error(errorMsgFormatter("Timestamp errors were found."));
+  }
+};
 
-  if (timestampArr.length <= 1) {
-    tsError = true;
-    console.error("Unexpected error: Timestamp array is empty.");
+// Check if the timestamps are in the right order
+const wrongOrderFilter: FilterFunc = (
+  { hms1, hms2, seconds1, seconds2 },
+  idx,
+) => {
+  if (seconds2 <= seconds1) {
+    const unindent = removeIndent(`
+      Timestamp duration error at line ${(idx + 1).toString()}:
+          --- Timestamp [${hms2}] should be greater than [${hms1}].`);
+
+    return unindent;
+  }
+};
+
+/*
+Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
+i.e.,
+"00:01:00.000 00:05:00.000"
+"00:05:00.000 00:10:00.000"
+will give an error.
+*/
+const duplicateTimestampFilter: FilterFunc = ({ hms1 }, idx, timestampArr) => {
+  const prevHms = timestampArr[idx - 1];
+  if (prevHms === undefined)
+    throw new UnexpectedError("Previous timestamp is undefined.");
+
+  const prevHms2 = prevHms.split(/\s/)[1];
+  if (prevHms2 === undefined && idx > 1)
+    throw new UnexpectedError(
+      `\nThe 2nd timestamp from line ${idx.toString()} might be undefined.`,
+    );
+
+  if (hms1 === prevHms2) {
+    return removeIndent(`
+      Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
+          --- Two instances of timestamp [${hms1}] were found.`);
+  }
+};
+
+const filters: FilterFunc[] = [wrongOrderFilter, duplicateTimestampFilter];
+
+const processTimestamps = (timestampArr: string[]) => {
+  const timestampErrors: string[] = [];
+  const videoSegmentDurations: number[] = [];
+  const timestampPairs: string[][] = [];
+  const videoFilename = timestampArr[0];
+
+  if (videoFilename === undefined)
+    throw new UnexpectedError("Video filename is undefined.");
+
+  for (const [idx, timestamp] of timestampArr.entries()) {
+    if (idx === 0) continue;
+    if (timestamp === "" && idx === timestampArr.length - 1) continue;
+    if (!timestampRegex.test(timestamp)) {
+      timestampErrors.push(
+        `\nInvalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`,
+      );
+      continue;
+    }
+
+    const [hms1, hms2] = timestamp.split(/\s/g) as [string, string];
+    const seconds1 = hmsToSeconds(hms1);
+    const seconds2 = hmsToSeconds(hms2);
+    const timestampFormats = { hms1, hms2, seconds1, seconds2 };
+
+    const hasError = filters.some((filter) => {
+      const errorMessage = filter(timestampFormats, idx, timestampArr);
+      if (errorMessage !== undefined) {
+        timestampErrors.push(errorMessage);
+        return true;
+      }
+    });
+
+    if (hasError) continue;
+
+    videoSegmentDurations.push(seconds2 - seconds1);
+    timestampPairs.push(getTimestampPair(timestamp, FFMPEG_OPTIONS.OFFSET));
   }
 
-  const timestampPairs = timestampArr.reduce<string[][]>(
-    (acc, timestamp, idx) => {
-      if (idx === 0) {
-        videoFilename = timestamp;
-        return [];
-      }
+  logAndThrowErrors(timestampErrors);
 
-      if (timestamp === "" && idx === timestampArr.length - 1) return acc;
-
-      if (timestampRegex.test(timestamp)) {
-        const timestamps = timestamp.split(/\s/g) as [string, string];
-
-        // Convert the time string format into seconds.
-        const timestamp1 = hmsToSeconds(timestamps[0]);
-        const timestamp2 = hmsToSeconds(timestamps[1]);
-
-        // Check for all possible timestamp errors
-        if (timestamp2 <= timestamp1) {
-          tsError = true;
-          const unindent = removeIndent(`
-                Timestamp duration error at line ${(idx + 1).toString()}:
-                    --- Timestamp [${timestamps[1]}] should be greater than [${timestamps[0]}].`);
-
-          console.error(unindent);
-          return acc;
-        }
-
-        const prevTimestamp = timestampArr[idx - 1];
-        if (prevTimestamp === undefined)
-          throw new Error(
-            errorMsgFormatter(
-              "Unexpected error: Previous timestamp is undefined.",
-            ),
-          );
-
-        const res = checkDuplicateTimestamp(prevTimestamp, timestamps[0], idx);
-        if (res.isDuplicate) {
-          tsError = true;
-          console.error(res.message);
-          return acc;
-        }
-
-        totalTime += timestamp2 - timestamp1;
-        videoSegmentDurations.push(timestamp2 - timestamp1);
-
-        return [...acc, getTimestampPair(timestamp, FFMPEG_OPTIONS.OFFSET)];
-      } else {
-        tsError = true;
-        console.error(
-          `\nInvalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`,
-        );
-        return acc;
-      }
-    },
-    [],
-  );
-
-  if (tsError)
-    throw new Error(errorMsgFormatter("Timestamp errors were found."));
-
+  const totalTime = videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
 };
 
@@ -210,6 +206,10 @@ export const getMainArgs = (timestampArr: string[]) => {
   return res;
 };
 
+/** 
+Convert seconds to hour:minute:seconds format
+Example: 60 --> 00:01:0.000 
+**/
 export const secondsToHms = (durationInSeconds: number) => {
   const hour = Math.floor(durationInSeconds / 3600);
   const minute = Math.floor((durationInSeconds % 3600) / 60);

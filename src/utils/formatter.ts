@@ -1,6 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 
+import { UnexpectedError } from "./errors/unexpectedError.js";
 import { FILENAME_OPTIONS } from "../config.js";
 
 import type { FFmpegArguments, FFmpegConfig } from "../types/index.js";
@@ -59,10 +60,11 @@ export const createFfmpegArgs = (
     const ts0 = ts[0];
     const ts1 = ts[1];
     if (ts0 === undefined || ts1 === undefined)
-      throw new Error(
-        errorMsgFormatter(
-          "Unexpected error: one of the timestamps is undefined.",
-        ),
+      throw new UnexpectedError(
+        removeIndent(`
+          One of the timestamps is undefined:
+            1st: ${ts0 ?? "undefined"}
+            2nd: ${ts1 ?? "undefined"}`),
       );
 
     let cmd: string[] = [
