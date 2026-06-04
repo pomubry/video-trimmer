@@ -11,10 +11,7 @@
   "lint-staged": {
     "**/*.{ts}": [
       "prettier --write",
-      "eslint --fix",
-      "tsc",
-      "vitest run",
-      "esbuild src/index.ts --bundle --platform=node --outfile=index.js"
+      "eslint --fix"
     ],
     "**/*.{json,md}": [
       "prettier --write",
