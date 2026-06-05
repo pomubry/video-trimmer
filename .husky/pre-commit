@@ -1,3 +1,5 @@
 npx lint-staged
 npx tsc
 npx vitest run
+npm run build
+git add index.js
