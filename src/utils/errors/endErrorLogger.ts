@@ -23,5 +23,3 @@ export class EndErrorLogger extends Error {
     });
   };
 }
-
-export const endErrorLogger = new EndErrorLogger();

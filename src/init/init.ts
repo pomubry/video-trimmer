@@ -4,7 +4,7 @@ import { suspendSystem } from "../system/childProcess.js";
 import { getMainArgs } from "../utils/timestamp.js";
 import { errorMsgFormatter } from "../utils/formatter.js";
 import { getTimestampArray } from "../utils/timestamp.js";
-import { EndErrorLogger } from "../utils/endErrorLogger.js";
+import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
 import { APP_OPTIONS } from "../config.js";
 
 export function init(endErrorLogger: EndErrorLogger) {

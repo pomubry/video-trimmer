@@ -5,7 +5,7 @@ import * as main from "./main.js";
 import * as childProcess from "../system/childProcess.js";
 import * as filesystem from "../system/filesystem.js";
 import { init } from "./init.js";
-import { EndErrorLogger } from "../utils/endErrorLogger.js";
+import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 import type { MockInstance } from "vitest";
