@@ -19,21 +19,27 @@ const timestampPairs = [
   ["00:09:00.000", "00:13:00.000"],
   ["00:14:00.000", "00:19:00.000"],
 ];
-const modify20 = () => (timestampPairs[2]![0] = "00:09:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-const reset20 = () => (timestampPairs[2]![0] = "00:05:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+function modify20() {
+  return (timestampPairs[2]![0] = "00:09:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+}
+function reset20() {
+  return (timestampPairs[2]![0] = "00:05:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+}
 const videoSegmentDurations = [60, 120, 180, 240, 300];
 
-const createTimestamp = (videoFilename: string, timestampPairs: string[][]) =>
-  [videoFilename, timestampPairs.map((pair) => pair.join(" ")).join("\n")].join(
-    "\n",
-  );
+function createTimestamp(videoFilename: string, timestampPairs: string[][]) {
+  return [
+    videoFilename,
+    timestampPairs.map((pair) => pair.join(" ")).join("\n"),
+  ].join("\n");
+}
 
-const mockErrorFileSizeAndDuration = (
+function mockErrorFileSizeAndDuration(
   arg: MainArgs,
   tsIndex: number,
   spyGetVideoDuration: MockInstance,
   spyGetFileSize: MockInstance,
-) => {
+) {
   arg.timestampPairs.forEach((_, i) => {
     const value =
       tsIndex === 1 && i + 1 === 5 ? (i + 1) * 60 - 5 : (i + 1) * 60;
@@ -43,9 +49,9 @@ const mockErrorFileSizeAndDuration = (
     .mockReturnValueOnce(5000 * 5000)
     .mockReturnValueOnce(tsIndex === 2 ? 6000 * 6000 : 2000 * 2000);
   fs.writeFileSync(arg.videoFilename, "random");
-};
+}
 
-const getArgs = (videoFilename: string) => {
+function getArgs(videoFilename: string) {
   return {
     timestamp: createTimestamp(videoFilename, timestampPairs),
     timestampPairs,
@@ -53,7 +59,7 @@ const getArgs = (videoFilename: string) => {
     videoSegmentDurations,
     videoFilename,
   };
-};
+}
 
 describe("init function", () => {
   let spyMain: MockInstance;
@@ -93,7 +99,7 @@ describe("init function", () => {
         expectedArgs,
         endErrorLogger.addError,
       );
-      expect(spySuspend).toBeCalledTimes(1);
+      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
     test("should log errors at the end", () => {
@@ -116,7 +122,7 @@ describe("init function", () => {
         1,
         expect.stringMatching(/possible error/gi),
       );
-      expect(spySuspend).toBeCalledTimes(1);
+      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
     test("should throw error", () => {
@@ -131,7 +137,7 @@ describe("init function", () => {
       expect(() => {
         init(endErrorLogger);
       }).toThrow(/timestamp errors/i);
-      expect(spySuspend).toBeCalledTimes(0);
+      expect(spySuspend).toHaveBeenCalledTimes(0);
     });
 
     test("should rename video input and update timestamp", () => {
@@ -194,7 +200,7 @@ describe("init function", () => {
           endErrorLogger.addError,
         );
       });
-      expect(spySuspend).toBeCalledTimes(1);
+      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
     test("should log errors at the end", () => {
@@ -227,7 +233,7 @@ describe("init function", () => {
         2,
         expect.stringMatching(/new file size is bigger/gi),
       );
-      expect(spySuspend).toBeCalledTimes(1);
+      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
     test("should throw error", () => {
@@ -247,7 +253,7 @@ describe("init function", () => {
       expect(() => {
         init(endErrorLogger);
       }).toThrow(/timestamp errors/i);
-      expect(spySuspend).toBeCalledTimes(0);
+      expect(spySuspend).toHaveBeenCalledTimes(0);
     });
 
     test("should rename multiple video input and update timestamp", () => {

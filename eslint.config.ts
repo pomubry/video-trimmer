@@ -22,5 +22,8 @@ export default defineConfig(
         projectService: true,
       },
     },
+    rules: {
+      "func-style": ["error", "declaration"],
+    },
   },
 );

@@ -17,7 +17,7 @@ describe("endErrorLogger", () => {
     });
     endErrorLogger.logErrors();
 
-    expect(spyError).toBeCalledTimes(3);
+    expect(spyError).toHaveBeenCalledTimes(3);
     messages.forEach((message, idx) => {
       expect(spyError).toHaveBeenNthCalledWith(idx + 1, message);
     });

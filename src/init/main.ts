@@ -27,7 +27,7 @@ import { APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 import type { MainArgs, AddError, FFmpegArguments } from "../types/index.js";
 
-export const main = (args: MainArgs, addError: AddError) => {
+export function main(args: MainArgs, addError: AddError) {
   const { timestampPairs, totalTime, videoSegmentDurations, videoFilename } =
     args;
 
@@ -107,4 +107,4 @@ ${fileSizeDiff}
 `);
 
   console.log("=".repeat(process.stdout.columns));
-};
+}

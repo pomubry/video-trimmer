@@ -4,7 +4,7 @@ import path from "node:path";
 import { blueText, redText, errorMsgFormatter } from "../utils/formatter.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-export const readTimestamps = () => {
+export function readTimestamps() {
   try {
     return fs.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
   } catch {
@@ -14,9 +14,9 @@ export const readTimestamps = () => {
       ),
     );
   }
-};
+}
 
-export const checkVideoFile = (videoFile: string) => {
+export function checkVideoFile(videoFile: string) {
   if (!fs.readdirSync(".").includes(videoFile)) {
     throw new Error(
       errorMsgFormatter(
@@ -24,47 +24,41 @@ export const checkVideoFile = (videoFile: string) => {
       ),
     );
   }
-};
+}
 
-export const createSegmentList = (
-  videoSegments: string[],
-  basename: string,
-) => {
+export function createSegmentList(videoSegments: string[], basename: string) {
   let myList = "";
   videoSegments.forEach(
     (file, index) =>
       (myList += `${index !== 0 ? "\n" : ""}file '${path.join(basename, file)}'`),
   );
   fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
-};
+}
 
-export const removeSegmentList = () => {
+export function removeSegmentList() {
   fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
-};
+}
 
-export const removeOutputIfExists = (outputFile: string) => {
+export function removeOutputIfExists(outputFile: string) {
   if (fs.readdirSync(".").includes(outputFile)) {
     console.log(
       `\nThe file [${blueText(outputFile)}] already exists. Removing file before making a new one. . .`,
     );
     fs.rmSync(outputFile);
   }
-};
+}
 
-export const removeVideoSegments = (baseName: string) => {
+export function removeVideoSegments(baseName: string) {
   if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
     fs.rmSync(baseName, { recursive: true, force: true });
   }
-};
+}
 
-export const createTimestampCopy = (
-  outputFilename: string,
-  content: string,
-) => {
+export function createTimestampCopy(outputFilename: string, content: string) {
   fs.writeFileSync(`${outputFilename}.txt`, content, { encoding: "utf-8" });
-};
+}
 
-export const renameFile = (timestampArr: string[], newFilename: string) => {
+export function renameFile(timestampArr: string[], newFilename: string) {
   if (timestampArr[0] === undefined)
     throw new Error(
       errorMsgFormatter("Renaming file failed because of empty timestamp."),
@@ -72,6 +66,8 @@ export const renameFile = (timestampArr: string[], newFilename: string) => {
   if (timestampArr[0] === newFilename) return;
 
   fs.renameSync(timestampArr[0], newFilename);
-};
+}
 
-export const getFileSize = (filename: string) => fs.statSync(filename).size;
+export function getFileSize(filename: string) {
+  return fs.statSync(filename).size;
+}

@@ -5,16 +5,18 @@ import { APP_OPTIONS } from "../config.js";
 
 import type { ExecSyncOptions } from "node:child_process";
 
-export const createVideoSegment = (
+export function createVideoSegment(
   args: string[],
   execSyncOptions: ExecSyncOptions,
-) => spawnSync("ffmpeg", args, execSyncOptions);
+) {
+  return spawnSync("ffmpeg", args, execSyncOptions);
+}
 
-export const mergeVideoSegments = (
+export function mergeVideoSegments(
   segmentListFilename: string,
   outputFilename: string,
   execSyncOptions: ExecSyncOptions,
-) => {
+) {
   const args = [
     "-v",
     "warning",
@@ -29,9 +31,9 @@ export const mergeVideoSegments = (
     outputFilename,
   ];
   spawnSync(`ffmpeg`, args, execSyncOptions);
-};
+}
 
-export const getVideoDuration = (baseOutputPath: string, file: string) => {
+export function getVideoDuration(baseOutputPath: string, file: string) {
   const fullPath = path.join(baseOutputPath, file);
   const args = [
     "-v",
@@ -45,9 +47,9 @@ export const getVideoDuration = (baseOutputPath: string, file: string) => {
   const res = spawnSync("ffprobe", args, { encoding: "utf8" });
 
   return Number(res.stdout);
-};
+}
 
-export const suspendSystem = () => {
+export function suspendSystem() {
   if (APP_OPTIONS.AUTO_SUSPEND) {
     switch (process.platform) {
       case "linux":
@@ -57,4 +59,4 @@ export const suspendSystem = () => {
         break;
     }
   }
-};
+}

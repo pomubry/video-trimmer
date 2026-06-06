@@ -6,14 +6,23 @@ import { FILENAME_OPTIONS } from "../config.js";
 
 import type { FFmpegArguments, FFmpegConfig } from "../types/index.js";
 
-const coloredText = (colorCode: string, message: string) =>
-  `\x1b[${colorCode}${message}\x1b[0m`;
-export const redText = (text: string) => coloredText("31m", text);
-export const greenText = (text: string) => coloredText("32m", text);
-export const blueText = (text: string) => coloredText("94m", text);
-export const purpleText = (text: string) => coloredText("35m", text);
+function coloredText(colorCode: string, message: string) {
+  return `\x1b[${colorCode}${message}\x1b[0m`;
+}
+export function redText(text: string) {
+  return coloredText("31m", text);
+}
+export function greenText(text: string) {
+  return coloredText("32m", text);
+}
+export function blueText(text: string) {
+  return coloredText("94m", text);
+}
+export function purpleText(text: string) {
+  return coloredText("35m", text);
+}
 
-export const videoCounter = (counter: number) => {
+export function videoCounter(counter: number) {
   let number = "";
 
   if (counter < 10) {
@@ -25,12 +34,12 @@ export const videoCounter = (counter: number) => {
   }
 
   return number;
-};
+}
 
-export const createFfmpegArgs = (
+export function createFfmpegArgs(
   { input, timestampPairs, videoSegments }: FFmpegArguments,
   { FPS, HEVC }: FFmpegConfig,
-) => {
+) {
   const basename = path.parse(input).name;
 
   const hevcEncoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
@@ -84,22 +93,22 @@ export const createFfmpegArgs = (
 
     return [...acc, cmd];
   }, []);
-};
+}
 
-export const getVideoSegmentRegExp = (
-  nameOnly: string,
-  extensionName: string,
-) => {
+export function getVideoSegmentRegExp(nameOnly: string, extensionName: string) {
   const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
   return new RegExp(pattern);
-};
+}
 
-export const outputFilenameFormatter = (basename: string) =>
-  `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
+export function outputFilenameFormatter(basename: string) {
+  return `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
+}
 
-export const errorMsgFormatter = (message: string) => `\n${message}\n`;
+export function errorMsgFormatter(message: string) {
+  return `\n${message}\n`;
+}
 
-export const removeIndent = (message: string) => {
+export function removeIndent(message: string) {
   const match = /\n([ \t]+)/.exec(message);
   let formatted = message;
 
@@ -114,4 +123,4 @@ export const removeIndent = (message: string) => {
   }
 
   return formatted;
-};
+}

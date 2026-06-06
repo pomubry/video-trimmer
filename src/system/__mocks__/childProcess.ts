@@ -3,7 +3,7 @@ import { fs } from "memfs";
 
 import { FILENAME_OPTIONS } from "../../config.js";
 
-export const createVideoSegment = (script: string[]) => {
+export function createVideoSegment(script: string[]) {
   const filenameRegex = new RegExp(
     `_\\d{3,4}.${FILENAME_OPTIONS.EXTENSION_NAME}`,
     "i",
@@ -17,7 +17,7 @@ export const createVideoSegment = (script: string[]) => {
   }
 
   fs.writeFileSync(filename.slice(), "something");
-};
+}
 
 export const mergeVideoSegments = vi.fn(
   (_segmentListFilename: string, outputFilename: string) => {
@@ -31,4 +31,4 @@ export const getVideoDuration = vi.fn(() => {
   );
 });
 
-export const suspendSystem = () => vi.fn();
+export const suspendSystem = vi.fn;

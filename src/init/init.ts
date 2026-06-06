@@ -7,7 +7,7 @@ import { getTimestampArray } from "../utils/timestamp.js";
 import { EndErrorLogger } from "../utils/endErrorLogger.js";
 import { APP_OPTIONS } from "../config.js";
 
-export const init = (endErrorLogger: EndErrorLogger) => {
+export function init(endErrorLogger: EndErrorLogger) {
   const ts = readTimestamps();
 
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
@@ -41,4 +41,4 @@ export const init = (endErrorLogger: EndErrorLogger) => {
 
   endErrorLogger.logErrors();
   suspendSystem();
-};
+}

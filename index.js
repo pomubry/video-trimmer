@@ -64,13 +64,18 @@ var APP_OPTIONS = {
 };
 
 // src/system/childProcess.ts
-var createVideoSegment = (args, execSyncOptions) =>
-  (0, import_node_child_process.spawnSync)("ffmpeg", args, execSyncOptions);
-var mergeVideoSegments = (
+function createVideoSegment(args, execSyncOptions) {
+  return (0, import_node_child_process.spawnSync)(
+    "ffmpeg",
+    args,
+    execSyncOptions,
+  );
+}
+function mergeVideoSegments(
   segmentListFilename,
   outputFilename,
   execSyncOptions,
-) => {
+) {
   const args = [
     "-v",
     "warning",
@@ -85,8 +90,8 @@ var mergeVideoSegments = (
     outputFilename,
   ];
   (0, import_node_child_process.spawnSync)(`ffmpeg`, args, execSyncOptions);
-};
-var getVideoDuration = (baseOutputPath, file) => {
+}
+function getVideoDuration(baseOutputPath, file) {
   const fullPath = import_node_path.default.join(baseOutputPath, file);
   const args = [
     "-v",
@@ -101,8 +106,8 @@ var getVideoDuration = (baseOutputPath, file) => {
     encoding: "utf8",
   });
   return Number(res.stdout);
-};
-var suspendSystem = () => {
+}
+function suspendSystem() {
   if (APP_OPTIONS.AUTO_SUSPEND) {
     switch (process.platform) {
       case "linux":
@@ -112,7 +117,7 @@ var suspendSystem = () => {
         break;
     }
   }
-};
+}
 
 // src/system/filesystem.ts
 var import_node_fs = __toESM(require("node:fs"), 1);
@@ -131,12 +136,22 @@ var UnexpectedError = class extends Error {
 };
 
 // src/utils/formatter.ts
-var coloredText = (colorCode, message) => `\x1B[${colorCode}${message}\x1B[0m`;
-var redText = (text) => coloredText("31m", text);
-var greenText = (text) => coloredText("32m", text);
-var blueText = (text) => coloredText("94m", text);
-var purpleText = (text) => coloredText("35m", text);
-var videoCounter = (counter) => {
+function coloredText(colorCode, message) {
+  return `\x1B[${colorCode}${message}\x1B[0m`;
+}
+function redText(text) {
+  return coloredText("31m", text);
+}
+function greenText(text) {
+  return coloredText("32m", text);
+}
+function blueText(text) {
+  return coloredText("94m", text);
+}
+function purpleText(text) {
+  return coloredText("35m", text);
+}
+function videoCounter(counter) {
   let number = "";
   if (counter < 10) {
     number = "00" + counter.toString();
@@ -146,11 +161,11 @@ var videoCounter = (counter) => {
     number += counter.toString();
   }
   return number;
-};
-var createFfmpegArgs = (
+}
+function createFfmpegArgs(
   { input, timestampPairs, videoSegments },
   { FPS, HEVC },
-) => {
+) {
   const basename = import_node_path2.default.parse(input).name;
   const hevcEncoder =
     import_node_os.default.platform() === "darwin"
@@ -201,17 +216,20 @@ var createFfmpegArgs = (
     ]);
     return [...acc, cmd];
   }, []);
-};
-var getVideoSegmentRegExp = (nameOnly, extensionName) => {
+}
+function getVideoSegmentRegExp(nameOnly, extensionName) {
   const pattern = `${nameOnly}_\\d{3,4}\\.${extensionName}`;
   return new RegExp(pattern);
-};
-var outputFilenameFormatter = (basename) =>
-  `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
-var errorMsgFormatter = (message) => `
+}
+function outputFilenameFormatter(basename) {
+  return `${basename} (Result).${FILENAME_OPTIONS.EXTENSION_NAME}`;
+}
+function errorMsgFormatter(message) {
+  return `
 ${message}
 `;
-var removeIndent = (message) => {
+}
+function removeIndent(message) {
   const match = /\n([ \t]+)/.exec(message);
   let formatted = message;
   if (match) {
@@ -223,10 +241,10 @@ var removeIndent = (message) => {
     formatted = message.replace(new RegExp(`^${indent}`, "gm"), "");
   }
   return formatted;
-};
+}
 
 // src/system/filesystem.ts
-var readTimestamps = () => {
+function readTimestamps() {
   try {
     return import_node_fs.default.readFileSync(
       FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
@@ -239,8 +257,8 @@ var readTimestamps = () => {
       ),
     );
   }
-};
-var checkVideoFile = (videoFile) => {
+}
+function checkVideoFile(videoFile) {
   if (!import_node_fs.default.readdirSync(".").includes(videoFile)) {
     throw new Error(
       errorMsgFormatter(
@@ -248,8 +266,8 @@ var checkVideoFile = (videoFile) => {
       ),
     );
   }
-};
-var createSegmentList = (videoSegments, basename) => {
+}
+function createSegmentList(videoSegments, basename) {
   let myList = "";
   videoSegments.forEach(
     (file, index) =>
@@ -259,11 +277,15 @@ var createSegmentList = (videoSegments, basename) => {
     FILENAME_OPTIONS.SEGMENT_LIST_FILENAME,
     myList,
   );
-};
-var removeSegmentList = () => {
+  import_node_fs.default.writeFileSync(
+    FILENAME_OPTIONS.SEGMENT_LIST_FILENAME,
+    myList,
+  );
+}
+function removeSegmentList() {
   import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
-};
-var removeOutputIfExists = (outputFile) => {
+}
+function removeOutputIfExists(outputFile) {
   if (import_node_fs.default.readdirSync(".").includes(outputFile)) {
     console.log(
       `
@@ -271,26 +293,28 @@ The file [${blueText(outputFile)}] already exists. Removing file before making a
     );
     import_node_fs.default.rmSync(outputFile);
   }
-};
-var removeVideoSegments = (baseName) => {
+}
+function removeVideoSegments(baseName) {
   if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
     import_node_fs.default.rmSync(baseName, { recursive: true, force: true });
   }
-};
-var createTimestampCopy = (outputFilename, content) => {
+}
+function createTimestampCopy(outputFilename, content) {
   import_node_fs.default.writeFileSync(`${outputFilename}.txt`, content, {
     encoding: "utf-8",
   });
-};
-var renameFile = (timestampArr, newFilename) => {
+}
+function renameFile(timestampArr, newFilename) {
   if (timestampArr[0] === void 0)
     throw new Error(
       errorMsgFormatter("Renaming file failed because of empty timestamp."),
     );
   if (timestampArr[0] === newFilename) return;
   import_node_fs.default.renameSync(timestampArr[0], newFilename);
-};
-var getFileSize = (filename) => import_node_fs.default.statSync(filename).size;
+}
+function getFileSize(filename) {
+  return import_node_fs.default.statSync(filename).size;
+}
 
 // src/utils/validator.ts
 var checkVideoDurationErrors = (
@@ -497,7 +521,7 @@ var getTimestampArray = (timestamp, separator) =>
     .filter(Boolean);
 
 // src/init/main.ts
-var main = (args, addError) => {
+function main(args, addError) {
   const { timestampPairs, totalTime, videoSegmentDurations, videoFilename } =
     args;
   const baseName = import_node_path5.default.parse(videoFilename).name;
@@ -557,7 +581,7 @@ Total processing time: ${secondsToHms(elapsedTime)}
 ${fileSizeDiff}
 `);
   console.log("=".repeat(process.stdout.columns));
-};
+}
 
 // src/utils/endErrorLogger.ts
 var EndErrorLogger = class extends Error {
@@ -579,7 +603,7 @@ var EndErrorLogger = class extends Error {
 var endErrorLogger = new EndErrorLogger();
 
 // src/init/init.ts
-var init = (endErrorLogger2) => {
+function init(endErrorLogger2) {
   const ts = readTimestamps();
   if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
     const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
@@ -609,7 +633,7 @@ var init = (endErrorLogger2) => {
   }
   endErrorLogger2.logErrors();
   suspendSystem();
-};
+}
 
 // src/index.ts
 if (FFMPEG_OPTIONS.OFFSET !== 0) {
