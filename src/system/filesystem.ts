@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { blueText, errorMsgFormatter } from "../utils/formatter.js";
+import { blueText, redText, errorMsgFormatter } from "../utils/formatter.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
 export const readTimestamps = () => {
@@ -10,7 +10,7 @@ export const readTimestamps = () => {
   } catch {
     throw new Error(
       errorMsgFormatter(
-        `The file [${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}] was not found!`,
+        `The file [${redText(FILENAME_OPTIONS.TIMESTAMPS_FILENAME)}] was not found!`,
       ),
     );
   }
@@ -20,7 +20,7 @@ export const checkVideoFile = (videoFile: string) => {
   if (!fs.readdirSync(".").includes(videoFile)) {
     throw new Error(
       errorMsgFormatter(
-        `${videoFile} was not found. Make sure to put the correct video filename at the top (Line 1) of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`,
+        `[${redText(videoFile)}] was not found. Make sure to put the correct video filename at the top (Line 1) of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`,
       ),
     );
   }
