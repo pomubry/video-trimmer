@@ -10,13 +10,13 @@ import {
 
 import type { AddError } from "../types/index.js";
 
-export const checkVideoDurationErrors = (
+export function checkVideoDurationErrors(
   videoSegments: string[],
   videoSegmentDurations: number[],
   baseName: string,
   addError: AddError,
-) =>
-  videoSegments.reduce<string[]>((acc, file, index) => {
+) {
+  return videoSegments.reduce<string[]>((acc, file, index) => {
     const durationInSeconds = getVideoDuration(baseName, file);
 
     if (videoSegmentDurations[index] === undefined) {
@@ -50,12 +50,13 @@ export const checkVideoDurationErrors = (
     }
     return acc;
   }, []);
+}
 
-export const checkFileSizeDiff = (
+export function checkFileSizeDiff(
   oldFile: string,
   newFile: string,
   addError: AddError,
-) => {
+) {
   const oldSize = getFileSize(oldFile);
   const newSize = getFileSize(newFile);
   const diffInMB = (oldSize - newSize) / (1024 * 1024);
@@ -70,4 +71,4 @@ export const checkFileSizeDiff = (
     addError(message);
     return message;
   }
-};
+}

@@ -14,11 +14,14 @@ interface TimestampFormats {
   seconds2: number;
 }
 
-type FilterFunc = (
+type FilterParams = [
   timestampFormats: TimestampFormats,
   idx: number,
   timestampArr: string[],
-) => string | undefined;
+];
+
+type FilterReturn = string | undefined;
+type FilterFunc = (...[arg1, arg2, arg3]: FilterParams) => FilterReturn;
 
 // Timestamp in HMS format: '12:34:56.123456789 12:34:56.123456789'
 const timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}"; // note double backslash
@@ -26,19 +29,19 @@ const timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 
 const specialCharsRegex = /[`~!@#$%^&*()=[\]{}\\|;:'",<>?]/g;
 
-const hmsToSeconds = (sexagesimal: string) => {
+function hmsToSeconds(sexagesimal: string) {
   const timeArr = sexagesimal.split(":");
   return timeArr.reduce(
     (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
     0,
   );
-};
+}
 
 /*
 Split the strings inside the array by whitespaces.
 The result would be in the form: [timestamp1,timestamp2]
 */
-const getTimestampPair = (timestamp: string, offset: number) => {
+function getTimestampPair(timestamp: string, offset: number) {
   let timestampPair = timestamp.split(/\s/);
 
   if (offset !== 0) {
@@ -49,22 +52,21 @@ const getTimestampPair = (timestamp: string, offset: number) => {
   }
 
   return timestampPair;
-};
+}
 
-const logAndThrowErrors = (tsError: string[]) => {
+function logAndThrowErrors(tsError: string[]) {
   if (tsError.length > 0) {
     tsError.forEach((err) => {
       console.error(err);
     });
     throw new Error(errorMsgFormatter("Timestamp errors were found."));
   }
-};
+}
 
 // Check if the timestamps are in the right order
-const wrongOrderFilter: FilterFunc = (
-  { hms1, hms2, seconds1, seconds2 },
-  idx,
-) => {
+function wrongOrderFilter(
+  ...[{ hms1, hms2, seconds1, seconds2 }, idx]: FilterParams
+): FilterReturn {
   if (seconds2 <= seconds1) {
     const unindent = removeIndent(`
       Timestamp duration error at line ${(idx + 1).toString()}:
@@ -72,7 +74,7 @@ const wrongOrderFilter: FilterFunc = (
 
     return unindent;
   }
-};
+}
 
 /*
 Check if the 1st timestamp of the current iteration is equal to the 2nd timestamp of the previous iteration.
@@ -81,7 +83,9 @@ i.e.,
 "00:05:00.000 00:10:00.000"
 will give an error.
 */
-const duplicateTimestampFilter: FilterFunc = ({ hms1 }, idx, timestampArr) => {
+function duplicateTimestampFilter(
+  ...[{ hms1 }, idx, timestampArr]: FilterParams
+): FilterReturn {
   const prevHms = timestampArr[idx - 1];
   if (prevHms === undefined)
     throw new UnexpectedError("Previous timestamp is undefined.");
@@ -97,11 +101,11 @@ const duplicateTimestampFilter: FilterFunc = ({ hms1 }, idx, timestampArr) => {
       Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
           --- Two instances of timestamp [${hms1}] were found.`);
   }
-};
+}
 
 const filters: FilterFunc[] = [wrongOrderFilter, duplicateTimestampFilter];
 
-const processTimestamps = (timestampArr: string[]) => {
+function processTimestamps(timestampArr: string[]) {
   const timestampErrors: string[] = [];
   const videoSegmentDurations: number[] = [];
   const timestampPairs: string[][] = [];
@@ -143,9 +147,9 @@ const processTimestamps = (timestampArr: string[]) => {
 
   const totalTime = videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
-};
+}
 
-const checkFileExtension = (videoFilename: string) => {
+function checkFileExtension(videoFilename: string) {
   const extensionName = path.extname(videoFilename).toLowerCase().slice(1);
   const extensionError =
     FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
@@ -165,12 +169,13 @@ const checkFileExtension = (videoFilename: string) => {
             ${extensionList}`);
     throw new Error(errorMsgFormatter(unindent));
   }
-};
+}
 
-const getSuggestedFilename = (videoFilename: string) =>
-  `Try renaming your filename to [${greenText(videoFilename)}] instead.`;
+function getSuggestedFilename(videoFilename: string) {
+  return `Try renaming your filename to [${greenText(videoFilename)}] instead.`;
+}
 
-const checkVideoFilename = (videoFilename: string) => {
+function checkVideoFilename(videoFilename: string) {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
 
   if (isInvalidFilename) {
@@ -184,9 +189,9 @@ const checkVideoFilename = (videoFilename: string) => {
 
     throw new Error(errorMsgFormatter(unindent));
   }
-};
+}
 
-export const getMainArgs = (timestampArr: string[]) => {
+export function getMainArgs(timestampArr: string[]) {
   const res: MainArgs = {
     timestamp: "",
     ...processTimestamps(timestampArr),
@@ -204,13 +209,13 @@ export const getMainArgs = (timestampArr: string[]) => {
   );
 
   return res;
-};
+}
 
 /** 
 Convert seconds to hour:minute:seconds format
 Example: 60 --> 00:01:0.000 
 **/
-export const secondsToHms = (durationInSeconds: number) => {
+export function secondsToHms(durationInSeconds: number) {
   const hour = Math.floor(durationInSeconds / 3600);
   const minute = Math.floor((durationInSeconds % 3600) / 60);
   const seconds = (durationInSeconds % 3600) % 60;
@@ -222,13 +227,14 @@ export const secondsToHms = (durationInSeconds: number) => {
     seconds < 10 ? "0" + seconds.toFixed(3) : seconds.toFixed(3);
 
   return `${hourFormat}:${minuteFormat}:${secondsFormat}`;
-};
+}
 
-export const getTimestampArray = (
+export function getTimestampArray(
   timestamp: string,
   separator: string | RegExp,
-) =>
-  timestamp
+) {
+  return timestamp
     .split(separator)
     .map((ts) => ts.trim())
     .filter(Boolean);
+}

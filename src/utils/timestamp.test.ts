@@ -7,14 +7,16 @@ import { APP_OPTIONS, FFMPEG_OPTIONS } from "../config.js";
 
 import type { MainArgs } from "../types/index.js";
 
-const getValidInput = (inputVideo: string) => [
-  inputVideo,
-  "00:00:00.000 00:01:00.000",
-  "00:02:00.000 00:04:00.000",
-  "00:05:00.000 00:08:00.000",
-];
+function getValidInput(inputVideo: string) {
+  return [
+    inputVideo,
+    "00:00:00.000 00:01:00.000",
+    "00:02:00.000 00:04:00.000",
+    "00:05:00.000 00:08:00.000",
+  ];
+}
 
-const generateMainArgs = (inputVideo: string) => {
+function generateMainArgs(inputVideo: string) {
   const mainArgs: MainArgs = {
     timestamp: removeIndent(`${inputVideo}
             00:00:00.000 00:01:00.000
@@ -31,17 +33,17 @@ const generateMainArgs = (inputVideo: string) => {
   };
 
   return mainArgs;
-};
+}
 
 describe("getMainArgs", () => {
   let inputVideo = "";
   let timestampArr: string[] = [];
 
-  const setup = (newInputVideo: string) => {
+  function setup(newInputVideo: string) {
     inputVideo = newInputVideo;
     fs.writeFileSync(newInputVideo, "random");
     timestampArr = getValidInput(newInputVideo);
-  };
+  }
 
   beforeEach(() => {
     setup("input.mp4");

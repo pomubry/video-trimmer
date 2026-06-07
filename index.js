@@ -276,32 +276,34 @@ function getFileSize(filename) {
 }
 
 // src/utils/validator.ts
-var checkVideoDurationErrors = (videoSegments, videoSegmentDurations, baseName, addError) => videoSegments.reduce((acc, file, index) => {
-  const durationInSeconds = getVideoDuration(baseName, file);
-  if (videoSegmentDurations[index] === void 0) {
-    throw new Error(
-      errorMsgFormatter(
-        `Duration of video segment for index ${index.toString()} might be undefined.`
-      )
+function checkVideoDurationErrors(videoSegments, videoSegmentDurations, baseName, addError) {
+  return videoSegments.reduce((acc, file, index) => {
+    const durationInSeconds = getVideoDuration(baseName, file);
+    if (videoSegmentDurations[index] === void 0) {
+      throw new Error(
+        errorMsgFormatter(
+          `Duration of video segment for index ${index.toString()} might be undefined.`
+        )
+      );
+    }
+    const difference = Math.abs(
+      videoSegmentDurations[index] - durationInSeconds
     );
-  }
-  const difference = Math.abs(
-    videoSegmentDurations[index] - durationInSeconds
-  );
-  const isGreaterThanOne = difference > 1;
-  const message = removeIndent(`
+    const isGreaterThanOne = difference > 1;
+    const message = removeIndent(`
         [${blueText(file)}] Duration: 
             - Computed: ${videoSegmentDurations[index].toFixed(3)} seconds
             - Actual: ${durationInSeconds.toFixed(3)} seconds
             - Difference: ${difference.toFixed(3)} seconds.${isGreaterThanOne ? redText(" Possible Error!") : greenText(" Result Okay!")}`);
-  console.log(message);
-  if (isGreaterThanOne) {
-    addError(message);
-    return [...acc, file];
-  }
-  return acc;
-}, []);
-var checkFileSizeDiff = (oldFile, newFile, addError) => {
+    console.log(message);
+    if (isGreaterThanOne) {
+      addError(message);
+      return [...acc, file];
+    }
+    return acc;
+  }, []);
+}
+function checkFileSizeDiff(oldFile, newFile, addError) {
   const oldSize = getFileSize(oldFile);
   const newSize = getFileSize(newFile);
   const diffInMB = (oldSize - newSize) / (1024 * 1024);
@@ -314,21 +316,21 @@ var checkFileSizeDiff = (oldFile, newFile, addError) => {
     addError(message);
     return message;
   }
-};
+}
 
 // src/utils/timestamp.ts
 var import_node_path4 = __toESM(require("node:path"), 1);
 var timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}";
 var timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 var specialCharsRegex = /[`~!@#$%^&*()=[\]{}\\|;:'",<>?]/g;
-var hmsToSeconds = (sexagesimal) => {
+function hmsToSeconds(sexagesimal) {
   const timeArr = sexagesimal.split(":");
   return timeArr.reduce(
     (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
     0
   );
-};
-var getTimestampPair = (timestamp, offset) => {
+}
+function getTimestampPair(timestamp, offset) {
   let timestampPair = timestamp.split(/\s/);
   if (offset !== 0) {
     timestampPair = timestampPair.map((singleTs) => {
@@ -337,24 +339,24 @@ var getTimestampPair = (timestamp, offset) => {
     });
   }
   return timestampPair;
-};
-var logAndThrowErrors = (tsError) => {
+}
+function logAndThrowErrors(tsError) {
   if (tsError.length > 0) {
     tsError.forEach((err) => {
       console.error(err);
     });
     throw new Error(errorMsgFormatter("Timestamp errors were found."));
   }
-};
-var wrongOrderFilter = ({ hms1, hms2, seconds1, seconds2 }, idx) => {
+}
+function wrongOrderFilter(...[{ hms1, hms2, seconds1, seconds2 }, idx]) {
   if (seconds2 <= seconds1) {
     const unindent = removeIndent(`
       Timestamp duration error at line ${(idx + 1).toString()}:
           --- Timestamp [${hms2}] should be greater than [${hms1}].`);
     return unindent;
   }
-};
-var duplicateTimestampFilter = ({ hms1 }, idx, timestampArr) => {
+}
+function duplicateTimestampFilter(...[{ hms1 }, idx, timestampArr]) {
   const prevHms = timestampArr[idx - 1];
   if (prevHms === void 0)
     throw new UnexpectedError("Previous timestamp is undefined.");
@@ -369,9 +371,9 @@ The 2nd timestamp from line ${idx.toString()} might be undefined.`
       Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
           --- Two instances of timestamp [${hms1}] were found.`);
   }
-};
+}
 var filters = [wrongOrderFilter, duplicateTimestampFilter];
-var processTimestamps = (timestampArr) => {
+function processTimestamps(timestampArr) {
   const timestampErrors = [];
   const videoSegmentDurations = [];
   const timestampPairs = [];
@@ -406,8 +408,8 @@ Invalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`
   logAndThrowErrors(timestampErrors);
   const totalTime = videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
   return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
-};
-var checkFileExtension = (videoFilename) => {
+}
+function checkFileExtension(videoFilename) {
   const extensionName = import_node_path4.default.extname(videoFilename).toLowerCase().slice(1);
   const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
   if (extensionError === -1) {
@@ -423,9 +425,11 @@ var checkFileExtension = (videoFilename) => {
             ${extensionList}`);
     throw new Error(errorMsgFormatter(unindent));
   }
-};
-var getSuggestedFilename = (videoFilename) => `Try renaming your filename to [${greenText(videoFilename)}] instead.`;
-var checkVideoFilename = (videoFilename) => {
+}
+function getSuggestedFilename(videoFilename) {
+  return `Try renaming your filename to [${greenText(videoFilename)}] instead.`;
+}
+function checkVideoFilename(videoFilename) {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
   if (isInvalidFilename) {
     const newFilename = videoFilename.replace(specialCharsRegex, "");
@@ -434,8 +438,8 @@ var checkVideoFilename = (videoFilename) => {
         ${getSuggestedFilename(newFilename)}`);
     throw new Error(errorMsgFormatter(unindent));
   }
-};
-var getMainArgs = (timestampArr) => {
+}
+function getMainArgs(timestampArr) {
   const res = {
     timestamp: "",
     ...processTimestamps(timestampArr)
@@ -449,8 +453,8 @@ var getMainArgs = (timestampArr) => {
     "\n"
   );
   return res;
-};
-var secondsToHms = (durationInSeconds) => {
+}
+function secondsToHms(durationInSeconds) {
   const hour = Math.floor(durationInSeconds / 3600);
   const minute = Math.floor(durationInSeconds % 3600 / 60);
   const seconds = durationInSeconds % 3600 % 60;
@@ -458,8 +462,10 @@ var secondsToHms = (durationInSeconds) => {
   const minuteFormat = minute < 10 ? "0" + minute.toString() : minute.toString();
   const secondsFormat = seconds < 10 ? "0" + seconds.toFixed(3) : seconds.toFixed(3);
   return `${hourFormat}:${minuteFormat}:${secondsFormat}`;
-};
-var getTimestampArray = (timestamp, separator) => timestamp.split(separator).map((ts) => ts.trim()).filter(Boolean);
+}
+function getTimestampArray(timestamp, separator) {
+  return timestamp.split(separator).map((ts) => ts.trim()).filter(Boolean);
+}
 
 // src/init/main.ts
 function main(args, addError) {
