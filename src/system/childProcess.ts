@@ -1,8 +1,6 @@
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { APP_OPTIONS } from "../config.js";
-
 import type { ExecSyncOptions } from "node:child_process";
 
 export function createVideoSegment(
@@ -50,13 +48,11 @@ export function getVideoDuration(baseOutputPath: string, file: string) {
 }
 
 export function suspendSystem() {
-  if (APP_OPTIONS.AUTO_SUSPEND) {
-    switch (process.platform) {
-      case "linux":
-        spawnSync("systemctl", ["suspend"]);
-        break;
-      default:
-        break;
-    }
+  switch (process.platform) {
+    case "linux":
+      spawnSync("systemctl", ["suspend"]);
+      break;
+    default:
+      break;
   }
 }

@@ -1,3 +1,4 @@
+import readline from "node:readline";
 import path from "node:path";
 import { vi, describe, test, beforeEach, expect } from "vitest";
 import { fs } from "memfs";
@@ -30,28 +31,36 @@ const newTimestampFilename = "otherFile.txt";
 const randomText = "some text";
 
 describe("Timestamp reader", () => {
-  test("Should read the timestamp file", () => {
+  test("Should read the timestamp file", async () => {
     fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
-
     const res = readTimestamps();
 
-    expect(res).toBe(randomText);
+    const rl = readline.createInterface({
+      input: res,
+      crlfDelay: Infinity, // Recognizes all CR LF variants
+    });
+
+    for await (const chunk of rl) {
+      expect(chunk).toBe(randomText);
+    }
   });
 
-  test("Should read a different file according to config", () => {
+  test("Should read a different file according to config", async () => {
     vi.spyOn(FILENAME_OPTIONS, "TIMESTAMPS_FILENAME", "get").mockReturnValue(
       newTimestampFilename,
     );
     fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, randomText);
 
     const res = readTimestamps();
+    const rl = readline.createInterface({
+      input: res,
+      crlfDelay: Infinity, // Recognizes all CR LF variants
+    });
 
     expect(FILENAME_OPTIONS.TIMESTAMPS_FILENAME).toBe(newTimestampFilename);
-    expect(res).toBe(randomText);
-  });
-
-  test("Should throw a custom error message", () => {
-    expect(() => readTimestamps()).toThrow(/was not found/);
+    for await (const chunk of rl) {
+      expect(chunk).toBe(randomText);
+    }
   });
 });
 
@@ -60,13 +69,13 @@ describe("Video File Checker", () => {
     const videoFile = "input.mp4";
     fs.writeFileSync(videoFile, randomText);
     expect(() => {
-      checkVideoFile(videoFile);
+      checkVideoFile(videoFile, 1);
     }).not.toThrow();
   });
 
   test("Should throw an error if video is not found", () => {
     expect(() => {
-      checkVideoFile("non-existing-file.mp4");
+      checkVideoFile("non-existing-file.mp4", 1);
     }).toThrow(/was not found/i);
   });
 });
@@ -164,18 +173,6 @@ describe("removeVideoSegments", () => {
     const res = fs.readdirSync(".");
     expect(res.length).toBe(1);
   });
-
-  test("Should keep the video segments", () => {
-    vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true);
-
-    expect(fs.readdirSync(".").length).toBe(1);
-    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
-
-    removeVideoSegments(baseName);
-
-    expect(fs.readdirSync(".").length).toBe(1);
-    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
-  });
 });
 
 describe("createTimestampCopy", () => {
@@ -189,11 +186,10 @@ describe("createTimestampCopy", () => {
 describe("renameFile", () => {
   test("Should rename a file", () => {
     const oldName = "oldName.txt";
-    const timestampArr = [oldName];
     const newName = "newName.txt";
     fs.writeFileSync(oldName, randomText);
 
-    renameFile(timestampArr, newName);
+    renameFile(oldName, newName);
 
     const res = fs.readFileSync(newName, { encoding: "utf-8" });
     expect(res).toBe(randomText);

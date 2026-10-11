@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "node:fs";
 import path from "node:path";
 
 import {
@@ -25,11 +25,23 @@ import {
 import { secondsToHms } from "../utils/timestamp.js";
 import { APP_OPTIONS, FFMPEG_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type { MainArgs, AddError, FFmpegArguments } from "../types/index.js";
+import type { AddError, FFmpegArguments, MainArg } from "../types/index.js";
 
-export function main(args: MainArgs, addError: AddError) {
-  const { timestampPairs, totalTime, videoSegmentDurations, videoFilename } =
-    args;
+function getTimestamp(mainArg: MainArg) {
+  const timestamp = mainArg.timestampPairs.reduce((acc, cur) => {
+    const tsLine = "\n" + cur.join(" ");
+    return acc + tsLine;
+  }, "");
+
+  return mainArg.videoFilename + timestamp;
+}
+
+function getTotalTime(mainArg: MainArg) {
+  return mainArg.videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
+}
+
+export function main(args: MainArg, addError: AddError) {
+  const { timestampPairs, videoSegmentDurations, videoFilename } = args;
 
   const baseName = path.parse(videoFilename).name;
   fs.mkdirSync(baseName, { recursive: true });
@@ -92,11 +104,16 @@ export function main(args: MainArgs, addError: AddError) {
 
   removeSegmentList();
 
-  removeVideoSegments(baseName);
+  if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
+    removeVideoSegments(baseName);
+  }
 
   if (APP_OPTIONS.KEEP_TIMESTAMP_COPY) {
-    createTimestampCopy(baseName, args.timestamp);
+    const timestamp = getTimestamp(args);
+    createTimestampCopy(baseName, timestamp);
   }
+
+  const totalTime = getTotalTime(args);
   const hms = secondsToHms(totalTime);
   const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
 

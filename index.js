@@ -1,34 +1,68 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
 // src/init/main.ts
-var import_fs = __toESM(require("fs"), 1);
-var import_node_path5 = __toESM(require("node:path"), 1);
+import fs2 from "node:fs";
+import path5 from "node:path";
 
 // src/system/childProcess.ts
-var import_node_path = __toESM(require("node:path"), 1);
-var import_node_child_process = require("node:child_process");
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+function createVideoSegment(args, execSyncOptions) {
+  return spawnSync("ffmpeg", args, execSyncOptions);
+}
+function mergeVideoSegments(segmentListFilename, outputFilename, execSyncOptions) {
+  const args = [
+    "-v",
+    "warning",
+    "-f",
+    "concat",
+    "-safe",
+    "0",
+    "-i",
+    segmentListFilename,
+    "-c",
+    "copy",
+    outputFilename
+  ];
+  spawnSync(`ffmpeg`, args, execSyncOptions);
+}
+function getVideoDuration(baseOutputPath, file) {
+  const fullPath = path.join(baseOutputPath, file);
+  const args = [
+    "-v",
+    "warning",
+    "-show_entries",
+    "format=duration",
+    "-of",
+    "default=noprint_wrappers=1:nokey=1",
+    fullPath
+  ];
+  const res = spawnSync("ffprobe", args, { encoding: "utf8" });
+  return Number(res.stdout);
+}
+function suspendSystem() {
+  switch (process.platform) {
+    case "linux":
+      spawnSync("systemctl", ["suspend"]);
+      break;
+    default:
+      break;
+  }
+}
+
+// src/system/filesystem.ts
+import fs from "node:fs";
+import path3 from "node:path";
+
+// src/utils/formatter.ts
+import path2 from "node:path";
+import os from "node:os";
+
+// src/utils/errors/unexpectedError.ts
+var UnexpectedError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "UnexpectedError";
+  }
+};
 
 // src/config.ts
 var FFMPEG_OPTIONS = {
@@ -49,72 +83,9 @@ var FILENAME_OPTIONS = {
 var APP_OPTIONS = {
   IGNORE_ERRORS: true,
   KEEP_VIDEO_SEGMENTS: true,
-  BATCH_SEPARATOR: "@batch@",
   KEEP_TIMESTAMP_COPY: true,
   AUTO_RENAME: false,
   AUTO_SUSPEND: false
-};
-
-// src/system/childProcess.ts
-function createVideoSegment(args, execSyncOptions) {
-  return (0, import_node_child_process.spawnSync)("ffmpeg", args, execSyncOptions);
-}
-function mergeVideoSegments(segmentListFilename, outputFilename, execSyncOptions) {
-  const args = [
-    "-v",
-    "warning",
-    "-f",
-    "concat",
-    "-safe",
-    "0",
-    "-i",
-    segmentListFilename,
-    "-c",
-    "copy",
-    outputFilename
-  ];
-  (0, import_node_child_process.spawnSync)(`ffmpeg`, args, execSyncOptions);
-}
-function getVideoDuration(baseOutputPath, file) {
-  const fullPath = import_node_path.default.join(baseOutputPath, file);
-  const args = [
-    "-v",
-    "warning",
-    "-show_entries",
-    "format=duration",
-    "-of",
-    "default=noprint_wrappers=1:nokey=1",
-    fullPath
-  ];
-  const res = (0, import_node_child_process.spawnSync)("ffprobe", args, { encoding: "utf8" });
-  return Number(res.stdout);
-}
-function suspendSystem() {
-  if (APP_OPTIONS.AUTO_SUSPEND) {
-    switch (process.platform) {
-      case "linux":
-        (0, import_node_child_process.spawnSync)("systemctl", ["suspend"]);
-        break;
-      default:
-        break;
-    }
-  }
-}
-
-// src/system/filesystem.ts
-var import_node_fs = __toESM(require("node:fs"), 1);
-var import_node_path3 = __toESM(require("node:path"), 1);
-
-// src/utils/formatter.ts
-var import_node_path2 = __toESM(require("node:path"), 1);
-var import_node_os = __toESM(require("node:os"), 1);
-
-// src/utils/errors/unexpectedError.ts
-var UnexpectedError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "UnexpectedError";
-  }
 };
 
 // src/utils/formatter.ts
@@ -145,8 +116,8 @@ function videoCounter(counter) {
   return number;
 }
 function createFfmpegArgs({ input, timestampPairs, videoSegments }, { FPS, HEVC }) {
-  const basename = import_node_path2.default.parse(input).name;
-  const hevcEncoder = import_node_os.default.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
+  const basename = path2.parse(input).name;
+  const hevcEncoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
   const encoder = HEVC ? [
     "-x265-params",
     "log-level=error",
@@ -185,7 +156,7 @@ function createFfmpegArgs({ input, timestampPairs, videoSegments }, { FPS, HEVC 
     ];
     cmd = cmd.concat(encoder);
     cmd = cmd.concat(fps);
-    cmd = cmd.concat([import_node_path2.default.join(basename, outputFilename)]);
+    cmd = cmd.concat([path2.join(basename, outputFilename)]);
     return [...acc, cmd];
   }, []);
 }
@@ -217,21 +188,13 @@ function removeIndent(message) {
 
 // src/system/filesystem.ts
 function readTimestamps() {
-  try {
-    return import_node_fs.default.readFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
-  } catch {
-    throw new Error(
-      errorMsgFormatter(
-        `The file [${redText(FILENAME_OPTIONS.TIMESTAMPS_FILENAME)}] was not found!`
-      )
-    );
-  }
+  return fs.createReadStream(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, "utf-8");
 }
-function checkVideoFile(videoFile) {
-  if (!import_node_fs.default.readdirSync(".").includes(videoFile)) {
+function checkVideoFile(videoFile, lineNumber) {
+  if (!fs.readdirSync(".").includes(videoFile)) {
     throw new Error(
       errorMsgFormatter(
-        `[${redText(videoFile)}] was not found. Make sure to put the correct video filename at the top (Line 1) of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`
+        `[${redText(videoFile)}] was not found. Make sure to put the correct video filename at line ${lineNumber.toString()} of ${FILENAME_OPTIONS.TIMESTAMPS_FILENAME}.`
       )
     );
   }
@@ -239,40 +202,33 @@ function checkVideoFile(videoFile) {
 function createSegmentList(videoSegments, basename) {
   let myList = "";
   videoSegments.forEach(
-    (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${import_node_path3.default.join(basename, file)}'`
+    (file, index) => myList += `${index !== 0 ? "\n" : ""}file '${path3.join(basename, file)}'`
   );
-  import_node_fs.default.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
+  fs.writeFileSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME, myList);
 }
 function removeSegmentList() {
-  import_node_fs.default.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
+  fs.rmSync(FILENAME_OPTIONS.SEGMENT_LIST_FILENAME);
 }
 function removeOutputIfExists(outputFile) {
-  if (import_node_fs.default.readdirSync(".").includes(outputFile)) {
+  if (fs.readdirSync(".").includes(outputFile)) {
     console.log(
       `
 The file [${blueText(outputFile)}] already exists. Removing file before making a new one. . .`
     );
-    import_node_fs.default.rmSync(outputFile);
+    fs.rmSync(outputFile);
   }
 }
 function removeVideoSegments(baseName) {
-  if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
-    import_node_fs.default.rmSync(baseName, { recursive: true, force: true });
-  }
+  fs.rmSync(baseName, { recursive: true, force: true });
 }
 function createTimestampCopy(outputFilename, content) {
-  import_node_fs.default.writeFileSync(`${outputFilename}.txt`, content, { encoding: "utf-8" });
+  fs.writeFileSync(`${outputFilename}.txt`, content, { encoding: "utf-8" });
 }
-function renameFile(timestampArr, newFilename) {
-  if (timestampArr[0] === void 0)
-    throw new Error(
-      errorMsgFormatter("Renaming file failed because of empty timestamp.")
-    );
-  if (timestampArr[0] === newFilename) return;
-  import_node_fs.default.renameSync(timestampArr[0], newFilename);
+function renameFile(oldFilename, newFilename) {
+  fs.renameSync(oldFilename, newFilename);
 }
 function getFileSize(filename) {
-  return import_node_fs.default.statSync(filename).size;
+  return fs.statSync(filename).size;
 }
 
 // src/utils/validator.ts
@@ -319,7 +275,8 @@ function checkFileSizeDiff(oldFile, newFile, addError) {
 }
 
 // src/utils/timestamp.ts
-var import_node_path4 = __toESM(require("node:path"), 1);
+import path4 from "node:path";
+import readline from "node:readline";
 var timestampPattern = "\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}";
 var timestampRegex = new RegExp(`^${timestampPattern} ${timestampPattern}$`);
 var specialCharsRegex = /[`~!@#$%^&*()=[\]{}\\|;:'",<>?]/g;
@@ -329,6 +286,15 @@ function hmsToSeconds(sexagesimal) {
     (acc, current, index) => acc + Number(current) * Math.pow(60, 2 - index),
     0
   );
+}
+function secondsToHms(durationInSeconds) {
+  const hour = Math.floor(durationInSeconds / 3600);
+  const minute = Math.floor(durationInSeconds % 3600 / 60);
+  const seconds = durationInSeconds % 3600 % 60;
+  const hourFormat = hour < 10 ? "0" + hour.toString() : hour.toString();
+  const minuteFormat = minute < 10 ? "0" + minute.toString() : minute.toString();
+  const secondsFormat = seconds < 10 ? "0" + seconds.toFixed(3) : seconds.toFixed(3);
+  return `${hourFormat}:${minuteFormat}:${secondsFormat}`;
 }
 function getTimestampPair(timestamp, offset) {
   let timestampPair = timestamp.split(/\s/);
@@ -350,67 +316,47 @@ function logAndThrowErrors(tsError) {
 }
 function wrongOrderFilter(...[{ hms1, hms2, seconds1, seconds2 }, idx]) {
   if (seconds2 <= seconds1) {
-    const unindent = removeIndent(`
-      Timestamp duration error at line ${(idx + 1).toString()}:
+    return removeIndent(`
+      Timestamp duration error at line ${idx.toString()}:
           --- Timestamp [${hms2}] should be greater than [${hms1}].`);
-    return unindent;
   }
 }
-function duplicateTimestampFilter(...[{ hms1 }, idx, timestampArr]) {
-  const prevHms = timestampArr[idx - 1];
-  if (prevHms === void 0)
-    throw new UnexpectedError("Previous timestamp is undefined.");
+function duplicateTimestampFilter(...[{ hms1 }, idx, prevHms]) {
   const prevHms2 = prevHms.split(/\s/)[1];
-  if (prevHms2 === void 0 && idx > 1)
+  if (prevHms2 === void 0 && idx > 2)
     throw new UnexpectedError(
       `
 The 2nd timestamp from line ${idx.toString()} might be undefined.`
     );
   if (hms1 === prevHms2) {
     return removeIndent(`
-      Duplicate timestamp found at line ${idx.toString()} and line ${(idx + 1).toString()}:
+      Duplicate timestamp found at line ${(idx - 1).toString()} and line ${idx.toString()}:
           --- Two instances of timestamp [${hms1}] were found.`);
   }
 }
 var filters = [wrongOrderFilter, duplicateTimestampFilter];
-function processTimestamps(timestampArr) {
+function processTimestamps(line, lineNumber, prevHms) {
   const timestampErrors = [];
-  const videoSegmentDurations = [];
-  const timestampPairs = [];
-  const videoFilename = timestampArr[0];
-  if (videoFilename === void 0)
-    throw new UnexpectedError("Video filename is undefined.");
-  for (const [idx, timestamp] of timestampArr.entries()) {
-    if (idx === 0) continue;
-    if (timestamp === "" && idx === timestampArr.length - 1) continue;
-    if (!timestampRegex.test(timestamp)) {
-      timestampErrors.push(
-        `
-Invalid timestamp format at line ${(idx + 1).toString()}: [${timestamp}].`
-      );
-      continue;
+  const [hms1, hms2] = line.split(/\s/g);
+  const seconds1 = hmsToSeconds(hms1);
+  const seconds2 = hmsToSeconds(hms2);
+  const timestampFormats = { hms1, hms2, seconds1, seconds2 };
+  const hasError = filters.some((filter) => {
+    const errorMessage = filter(timestampFormats, lineNumber, prevHms);
+    if (errorMessage !== void 0) {
+      timestampErrors.push(errorMessage);
+      return true;
     }
-    const [hms1, hms2] = timestamp.split(/\s/g);
-    const seconds1 = hmsToSeconds(hms1);
-    const seconds2 = hmsToSeconds(hms2);
-    const timestampFormats = { hms1, hms2, seconds1, seconds2 };
-    const hasError = filters.some((filter) => {
-      const errorMessage = filter(timestampFormats, idx, timestampArr);
-      if (errorMessage !== void 0) {
-        timestampErrors.push(errorMessage);
-        return true;
-      }
-    });
-    if (hasError) continue;
-    videoSegmentDurations.push(seconds2 - seconds1);
-    timestampPairs.push(getTimestampPair(timestamp, FFMPEG_OPTIONS.OFFSET));
-  }
-  logAndThrowErrors(timestampErrors);
-  const totalTime = videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
-  return { timestampPairs, totalTime, videoSegmentDurations, videoFilename };
+  });
+  if (hasError) return { type: "error", errors: timestampErrors };
+  return {
+    type: "success",
+    timestampPairs: getTimestampPair(line, FFMPEG_OPTIONS.OFFSET),
+    videoSegmentDuration: seconds2 - seconds1
+  };
 }
-function checkFileExtension(videoFilename) {
-  const extensionName = import_node_path4.default.extname(videoFilename).toLowerCase().slice(1);
+function checkFileExtension(videoFilename, lineNumber) {
+  const extensionName = path4.extname(videoFilename).toLowerCase().slice(1);
   const extensionError = FILENAME_OPTIONS.SUPPORTED_EXTENSIONS.indexOf(extensionName);
   if (extensionError === -1) {
     const formatter = new Intl.ListFormat("en", {
@@ -420,59 +366,110 @@ function checkFileExtension(videoFilename) {
     const extensionList = formatter.format(
       FILENAME_OPTIONS.SUPPORTED_EXTENSIONS
     );
-    const unindent = removeIndent(`The video format ${extensionName} is not supported.
-        Only the following extensions are valid:
+    const unindent = removeIndent(`Invalid timestamp or video format [${redText(videoFilename)}] at line ${lineNumber.toString()}.
+        If this was meant to be a filename, only the following extensions are valid:
             ${extensionList}`);
     throw new Error(errorMsgFormatter(unindent));
   }
 }
-function getSuggestedFilename(videoFilename) {
-  return `Try renaming your filename to [${greenText(videoFilename)}] instead.`;
-}
-function checkVideoFilename(videoFilename) {
+function checkVideoFilename(videoFilename, lineNumber) {
   const isInvalidFilename = specialCharsRegex.test(videoFilename);
   if (isInvalidFilename) {
     const newFilename = videoFilename.replace(specialCharsRegex, "");
+    const message = `The video filename should not contain any special characters.
+        Try renaming your filename at line ${lineNumber.toString()} to [${greenText(newFilename)}] instead.`;
     if (APP_OPTIONS.AUTO_RENAME) return newFilename;
-    const unindent = removeIndent(`The video filename should not contain any special characters.
-        ${getSuggestedFilename(newFilename)}`);
+    const unindent = removeIndent(message);
     throw new Error(errorMsgFormatter(unindent));
   }
 }
-function getMainArgs(timestampArr) {
-  const res = {
-    timestamp: "",
-    ...processTimestamps(timestampArr)
+function createDefaultMainArg() {
+  return {
+    timestampPairs: [],
+    videoSegmentDurations: [],
+    videoFilename: "",
+    oldFilename: ""
   };
-  checkFileExtension(res.videoFilename);
-  checkVideoFile(res.videoFilename);
-  const newFilename = checkVideoFilename(res.videoFilename);
-  if (newFilename !== void 0) res.videoFilename = newFilename;
-  const timestampPairs = res.timestampPairs.map((pair) => pair.join(" "));
-  res.timestamp = [newFilename ?? res.videoFilename, ...timestampPairs].join(
-    "\n"
-  );
-  return res;
 }
-function secondsToHms(durationInSeconds) {
-  const hour = Math.floor(durationInSeconds / 3600);
-  const minute = Math.floor(durationInSeconds % 3600 / 60);
-  const seconds = durationInSeconds % 3600 % 60;
-  const hourFormat = hour < 10 ? "0" + hour.toString() : hour.toString();
-  const minuteFormat = minute < 10 ? "0" + minute.toString() : minute.toString();
-  const secondsFormat = seconds < 10 ? "0" + seconds.toFixed(3) : seconds.toFixed(3);
-  return `${hourFormat}:${minuteFormat}:${secondsFormat}`;
+function processVideoInput(line, lineNumber) {
+  checkFileExtension(line, lineNumber);
+  checkVideoFile(line, lineNumber);
+  const newFilename = checkVideoFilename(line, lineNumber);
+  const mainArg = createDefaultMainArg();
+  if (newFilename !== void 0) {
+    mainArg.oldFilename = line;
+    mainArg.videoFilename = newFilename;
+  } else {
+    mainArg.oldFilename = line;
+    mainArg.videoFilename = line;
+  }
+  return mainArg;
 }
-function getTimestampArray(timestamp, separator) {
-  return timestamp.split(separator).map((ts) => ts.trim()).filter(Boolean);
+async function getMainArgs(readStream) {
+  const mainArgs = [];
+  let timestampErrors = [];
+  let mainArg = createDefaultMainArg();
+  let lineNumber = 0;
+  let previousTimestamp = "";
+  const rl = readline.createInterface({
+    input: readStream,
+    crlfDelay: Infinity
+    // Recognizes all CR LF variants
+  });
+  try {
+    for await (let line of rl) {
+      lineNumber += 1;
+      line = line.trim();
+      if (line === "" && lineNumber === 1)
+        throw new Error(errorMsgFormatter("First line cannot be empty."));
+      if (line === "") continue;
+      if (mainArg.videoFilename === "") {
+        const res2 = processVideoInput(line, lineNumber);
+        mainArg.oldFilename = res2.oldFilename;
+        mainArg.videoFilename = res2.videoFilename;
+        continue;
+      }
+      if (timestampRegex.test(line)) {
+        const res2 = processTimestamps(line, lineNumber, previousTimestamp);
+        if (res2.type === "error") {
+          timestampErrors = timestampErrors.concat(res2.errors);
+          continue;
+        }
+        mainArg.timestampPairs.push(res2.timestampPairs);
+        mainArg.videoSegmentDurations.push(res2.videoSegmentDuration);
+        previousTimestamp = line;
+        continue;
+      }
+      const res = processVideoInput(line, lineNumber);
+      mainArgs.push(mainArg);
+      mainArg = createDefaultMainArg();
+      mainArg.oldFilename = res.oldFilename;
+      mainArg.videoFilename = res.videoFilename;
+    }
+  } finally {
+    readStream.destroy();
+  }
+  logAndThrowErrors(timestampErrors);
+  mainArgs.push(mainArg);
+  return mainArgs;
 }
 
 // src/init/main.ts
+function getTimestamp(mainArg) {
+  const timestamp = mainArg.timestampPairs.reduce((acc, cur) => {
+    const tsLine = "\n" + cur.join(" ");
+    return acc + tsLine;
+  }, "");
+  return mainArg.videoFilename + timestamp;
+}
+function getTotalTime(mainArg) {
+  return mainArg.videoSegmentDurations.reduce((acc, cur) => acc + cur, 0);
+}
 function main(args, addError) {
-  const { timestampPairs, totalTime, videoSegmentDurations, videoFilename } = args;
-  const baseName = import_node_path5.default.parse(videoFilename).name;
-  import_fs.default.mkdirSync(baseName, { recursive: true });
-  let videoSegments = import_fs.default.readdirSync(baseName);
+  const { timestampPairs, videoSegmentDurations, videoFilename } = args;
+  const baseName = path5.parse(videoFilename).name;
+  fs2.mkdirSync(baseName, { recursive: true });
+  let videoSegments = fs2.readdirSync(baseName);
   const ffmpegArgs = {
     input: videoFilename,
     timestampPairs,
@@ -490,7 +487,7 @@ function main(args, addError) {
     baseName,
     FILENAME_OPTIONS.EXTENSION_NAME
   );
-  videoSegments = import_fs.default.readdirSync(baseName).filter((file) => videoSegmentRegExp.test(file));
+  videoSegments = fs2.readdirSync(baseName).filter((file) => videoSegmentRegExp.test(file));
   const possibleErrors = checkVideoDurationErrors(
     videoSegments,
     videoSegmentDurations,
@@ -513,10 +510,14 @@ function main(args, addError) {
   console.log(`
 ${greenText(outputFile)} has been created.`);
   removeSegmentList();
-  removeVideoSegments(baseName);
-  if (APP_OPTIONS.KEEP_TIMESTAMP_COPY) {
-    createTimestampCopy(baseName, args.timestamp);
+  if (!APP_OPTIONS.KEEP_VIDEO_SEGMENTS) {
+    removeVideoSegments(baseName);
   }
+  if (APP_OPTIONS.KEEP_TIMESTAMP_COPY) {
+    const timestamp = getTimestamp(args);
+    createTimestampCopy(baseName, timestamp);
+  }
+  const totalTime = getTotalTime(args);
   const hms = secondsToHms(totalTime);
   const fileSizeDiff = checkFileSizeDiff(videoFilename, outputFile, addError);
   console.log(`
@@ -546,34 +547,19 @@ var EndErrorLogger = class extends Error {
 };
 
 // src/init/init.ts
-function init(endErrorLogger) {
-  const ts = readTimestamps();
-  if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
-    const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
-    const mainArgs = timestampBatch.map((ts2) => getTimestampArray(ts2, "\n")).map((timestampArr) => {
-      const args = getMainArgs(timestampArr);
-      renameFile(timestampArr, args.videoFilename);
-      return args;
-    });
-    mainArgs.forEach((arg, i) => {
-      if (timestampBatch[i] === void 0)
-        throw new Error(
-          errorMsgFormatter(
-            `Index ${i.toString()} of the timestamp batch is undefined.
-                        ${timestampBatch}`
-            // eslint-disable-line @typescript-eslint/restrict-template-expressions
-          )
-        );
-      main(arg, endErrorLogger.addError);
-    });
-  } else {
-    const timestampArr = getTimestampArray(ts, "\n");
-    const args = getMainArgs(timestampArr);
-    renameFile(timestampArr, args.videoFilename);
-    main(args, endErrorLogger.addError);
-  }
+async function init(endErrorLogger) {
+  const readStream = readTimestamps();
+  const mainArgs = await getMainArgs(readStream);
+  mainArgs.forEach((mainArg) => {
+    if (mainArg.oldFilename !== mainArg.videoFilename) {
+      renameFile(mainArg.oldFilename, mainArg.videoFilename);
+    }
+  });
+  mainArgs.forEach((mainArg) => {
+    main(mainArg, endErrorLogger.addError);
+  });
   endErrorLogger.logErrors();
-  suspendSystem();
+  if (APP_OPTIONS.AUTO_SUSPEND) suspendSystem();
 }
 
 // src/index.ts
@@ -584,7 +570,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 }
 try {
   const endErrorLogger = new EndErrorLogger();
-  init(endErrorLogger);
+  await init(endErrorLogger);
 } catch (e) {
   console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =

@@ -7,12 +7,11 @@ export interface FFmpegArguments {
   videoSegments: string[];
 }
 
-export interface MainArgs {
-  timestamp: string;
+export interface MainArg {
   timestampPairs: string[][];
-  totalTime: number;
   videoSegmentDurations: number[];
   videoFilename: string;
+  oldFilename: string;
 }
 
 export interface FFmpegConfig {

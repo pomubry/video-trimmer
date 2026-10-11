@@ -11,7 +11,7 @@ if (FFMPEG_OPTIONS.OFFSET !== 0) {
 
 try {
   const endErrorLogger = new EndErrorLogger();
-  init(endErrorLogger);
+  await init(endErrorLogger);
 } catch (e) {
   console.log(`
 = = = = = = = = = = H I N T S : = = = = = = = = = =

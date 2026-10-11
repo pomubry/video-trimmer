@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { fs } from "memfs";
 
 import * as fileSystem from "../system/filesystem.js";
@@ -8,10 +8,10 @@ import { main } from "./main.js";
 import { readTimestamps } from "../system/filesystem.js";
 import { getMainArgs, secondsToHms } from "../utils/timestamp.js";
 import { outputFilenameFormatter, videoCounter } from "../utils/formatter.js";
-import { getTimestampArray } from "../utils/timestamp.js";
+import { UnexpectedError } from "../utils/errors/unexpectedError.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type { MainArgs } from "../types/index.js";
+import type { MainArg } from "../types/index.js";
 
 const baseName = "segment";
 const timestampText = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}
@@ -27,20 +27,24 @@ const videoSegments = new Array(5)
       `${baseName}_${videoCounter(i + 1)}.${FILENAME_OPTIONS.EXTENSION_NAME}`,
   );
 const errorFile = videoSegments.filter((_, i) => i % 2 === 0);
-const argsInit: MainArgs = {
-  timestamp: timestampText,
-  timestampPairs: [[]],
-  totalTime: 0,
-  videoFilename: "",
-  videoSegmentDurations: [],
-};
+
+function getInitArgs() {
+  const argsInit: MainArg = {
+    timestampPairs: [],
+    videoSegmentDurations: [],
+    videoFilename: "",
+    oldFilename: "",
+  };
+
+  return argsInit;
+}
 
 describe("main function", () => {
-  let args = { ...argsInit };
+  let args: MainArg = getInitArgs();
   const otherFile = "other-file.txt";
   const spy = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.spyOn(console, "log").mockImplementation(vi.fn());
     vi.spyOn(console, "error").mockImplementation(vi.fn());
     vi.spyOn(validator, "checkVideoDurationErrors").mockReturnValue([]);
@@ -57,15 +61,15 @@ describe("main function", () => {
     );
     fs.writeFileSync(otherFile, "random");
 
-    const ts = readTimestamps();
-    const timestampArr = getTimestampArray(ts, "\n");
-    args = {
-      ...getMainArgs(timestampArr),
-    };
-  });
+    const readStream = readTimestamps();
+    const mainArgs = await getMainArgs(readStream);
+    const firstArg = mainArgs[0];
 
-  afterEach(() => {
-    args = { ...argsInit };
+    if (firstArg === undefined) {
+      throw new UnexpectedError("First MainArg object is undefined.");
+    }
+
+    args = structuredClone(firstArg);
   });
 
   test("should create expected files", () => {
@@ -101,6 +105,14 @@ describe("main function", () => {
     expect(spyLog).toHaveBeenCalledWith(
       expect.stringMatching(/saved .+\d+.+ mb/i),
     );
+  });
+
+  test("Should keep the video segments", () => {
+    vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(true);
+
+    main(args, spy);
+
+    expect(fs.readdirSync(baseName)).toHaveLength(videoSegments.length);
   });
 
   test("should not create timestamp copy", () => {

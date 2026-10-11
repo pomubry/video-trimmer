@@ -1,297 +1,291 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import path from "node:path";
 import { fs } from "memfs";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import * as main from "./main.js";
 import * as childProcess from "../system/childProcess.js";
 import * as filesystem from "../system/filesystem.js";
 import { init } from "./init.js";
-import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
+import { outputFilenameFormatter } from "../utils/formatter.js";
 import { APP_OPTIONS, FILENAME_OPTIONS } from "../config.js";
 
-import type { MockInstance } from "vitest";
-import type { MainArgs } from "../types/index.js";
+import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
+import { UnexpectedError } from "../utils/errors/unexpectedError.js";
 
 const baseName = "segment";
-const timestampPairs = [
-  ["00:00:00.000", "00:01:00.000"],
-  ["00:02:00.000", "00:04:00.000"],
-  ["00:05:00.000", "00:08:00.000"],
-  ["00:09:00.000", "00:13:00.000"],
-  ["00:14:00.000", "00:19:00.000"],
-];
-function modify20() {
-  return (timestampPairs[2]![0] = "00:09:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-}
-function reset20() {
-  return (timestampPairs[2]![0] = "00:05:00.000"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-}
-const videoSegmentDurations = [60, 120, 180, 240, 300];
 
-function createTimestamp(videoFilename: string, timestampPairs: string[][]) {
-  return [
-    videoFilename,
-    timestampPairs.map((pair) => pair.join(" ")).join("\n"),
-  ].join("\n");
+function createTimestamp(videoFilename: string) {
+  // Each timestamp duration is increased by 60 seconds
+  return `${videoFilename}
+00:00:00.000 00:01:00.000
+00:02:00.000 00:04:00.000
+00:05:00.000 00:08:00.000
+00:09:00.000 00:13:00.000
+00:14:00.000 00:19:00.000`;
 }
 
-function mockErrorFileSizeAndDuration(
-  arg: MainArgs,
-  tsIndex: number,
-  spyGetVideoDuration: MockInstance,
-  spyGetFileSize: MockInstance,
-) {
-  arg.timestampPairs.forEach((_, i) => {
-    const value =
-      tsIndex === 1 && i + 1 === 5 ? (i + 1) * 60 - 5 : (i + 1) * 60;
-    spyGetVideoDuration.mockReturnValueOnce(value);
+function setupInputFiles(timestamp: string, videoFilename: string) {
+  fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, timestamp, {
+    encoding: "utf-8",
   });
-  spyGetFileSize
-    .mockReturnValueOnce(5000 * 5000)
-    .mockReturnValueOnce(tsIndex === 2 ? 6000 * 6000 : 2000 * 2000);
-  fs.writeFileSync(arg.videoFilename, "random");
-}
-
-function getArgs(videoFilename: string) {
-  return {
-    timestamp: createTimestamp(videoFilename, timestampPairs),
-    timestampPairs,
-    totalTime: videoSegmentDurations.reduce((acc, cur) => acc + cur, 0),
-    videoSegmentDurations,
-    videoFilename,
-  };
+  fs.writeFileSync(videoFilename, "random");
 }
 
 describe("init function", () => {
-  let spyMain: MockInstance;
-  let spySuspend: MockInstance;
-  let spyError: MockInstance;
-  let spyGetFileSize: MockInstance;
-  let spyGetVideoDuration: MockInstance;
   let endErrorLogger: EndErrorLogger;
 
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(vi.fn());
     vi.spyOn(console, "error").mockImplementation(vi.fn());
-    spyMain = vi.spyOn(main, "main").mockImplementation(vi.fn());
-    spySuspend = vi.spyOn(childProcess, "suspendSystem");
-    spyError = vi.spyOn(console, "error");
-    spyGetFileSize = vi.spyOn(filesystem, "getFileSize");
-    spyGetVideoDuration = vi.spyOn(childProcess, "getVideoDuration");
     endErrorLogger = new EndErrorLogger();
-    reset20();
   });
 
-  describe("single operation", () => {
+  function mockVideoDuration(mockError = false) {
+    // Array values are based on the return value of `createTimestamp`
+    [60, 120, 180, 240, 300].forEach((_, tsIndex) => {
+      const value =
+        mockError && tsIndex + 1 === 5
+          ? (tsIndex + 1) * 60 - 5
+          : (tsIndex + 1) * 60;
+      vi.spyOn(childProcess, "getVideoDuration").mockReturnValueOnce(value);
+    });
+  }
+
+  function mockGetFileSize(mockError = false) {
+    vi.spyOn(filesystem, "getFileSize")
+      .mockReturnValueOnce(5000 * 5000)
+      .mockReturnValueOnce(mockError ? 6000 * 6000 : 2000 * 2000);
+  }
+
+  describe("in single operation", () => {
     const videoFilename = `${baseName}1.mp4`;
-    const singleTimestamp = createTimestamp(videoFilename, timestampPairs);
+    const singleTimestamp = createTimestamp(videoFilename);
 
-    test("should pass expected arguments", () => {
-      const expectedArgs = getArgs(videoFilename);
-      fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {
-        encoding: "utf-8",
-      });
-      fs.writeFileSync(videoFilename, "random");
+    test("should auto rename input and timestamp", async () => {
+      vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValueOnce(true);
+      mockVideoDuration();
 
-      init(endErrorLogger);
+      const oldFilename = "input! video@.mp4";
+      const newFilename = "input video.mp4";
+      const singleTimestamp = createTimestamp(oldFilename);
 
-      expect(spyMain).toHaveBeenCalledTimes(1);
-      expect(spyMain).toHaveBeenCalledWith(
-        expectedArgs,
-        endErrorLogger.addError,
-      );
-      expect(spySuspend).toHaveBeenCalledTimes(1);
+      setupInputFiles(singleTimestamp, oldFilename);
+
+      await init(endErrorLogger);
+
+      const files = fs.readdirSync(".");
+      expect(files).toContain(newFilename);
+      expect(files).toContain(path.parse(newFilename).name + ".txt");
     });
 
-    test("should log errors at the end", () => {
-      spyMain.mockRestore();
-      fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, singleTimestamp, {
-        encoding: "utf-8",
-      });
-      const expectedArg = getArgs(videoFilename);
-      mockErrorFileSizeAndDuration(
-        expectedArg,
-        1,
-        spyGetVideoDuration,
-        spyGetFileSize,
-      );
+    test("should throw error if AUTO_RENAME is false (default)", async () => {
+      const oldFilename = "input! video@.mp4";
+      const singleTimestamp = createTimestamp(oldFilename);
 
-      init(endErrorLogger);
+      setupInputFiles(singleTimestamp, oldFilename);
+
+      await expect(init(endErrorLogger)).rejects.toThrow(
+        /(?=.*special characters)(?=.*try renaming)/is,
+      );
+    });
+
+    test("should log video duration error", async () => {
+      const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
+      setupInputFiles(singleTimestamp, videoFilename);
+      mockGetFileSize();
+      mockVideoDuration(true);
+
+      await init(endErrorLogger);
 
       expect(spyError).toHaveBeenCalledTimes(1);
       expect(spyError).toHaveBeenNthCalledWith(
         1,
         expect.stringMatching(/possible error/gi),
       );
-      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
-    test("should throw error", () => {
-      modify20();
-      const timestampWithError = createTimestamp(videoFilename, timestampPairs);
-      fs.writeFileSync(
-        FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-        timestampWithError,
-        { encoding: "utf-8" },
-      );
+    test("should log file size error", async () => {
+      const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
+      setupInputFiles(singleTimestamp, videoFilename);
+      mockGetFileSize(true);
+      mockVideoDuration();
 
-      expect(() => {
-        init(endErrorLogger);
-      }).toThrow(/timestamp errors/i);
-      expect(spySuspend).toHaveBeenCalledTimes(0);
+      await init(endErrorLogger);
+
+      expect(spyError).toHaveBeenCalledTimes(1);
+      expect(spyError).toHaveBeenNthCalledWith(
+        1,
+        expect.stringMatching(/file size/gi),
+      );
     });
 
-    test("should rename video input and update timestamp", () => {
-      vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
-      const baseName = "video with invalid character!";
-      const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-      const newFile = baseName.slice(0, -1);
-      const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-      const expectedArgs = getArgs(newFileName);
-      fs.writeFileSync(
-        FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-        createTimestamp(baseFileName, timestampPairs),
-        { encoding: "utf-8" },
-      );
-      fs.writeFileSync(baseFileName, "random");
+    describe("auto suspend function", () => {
+      async function normalRun() {
+        setupInputFiles(singleTimestamp, videoFilename);
+        mockGetFileSize();
+        mockVideoDuration();
 
-      init(endErrorLogger);
+        await init(endErrorLogger);
+      }
 
-      const dir = fs.readdirSync(".");
-      expect(spyMain).toHaveBeenCalledTimes(1);
-      expect(spyMain).toHaveBeenCalledWith(
-        expectedArgs,
-        endErrorLogger.addError,
-      );
-      expect(dir).toContain(newFileName);
+      test("should suspend when AUTO_SUSPEND is true", async () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_SUSPEND", "get").mockReturnValueOnce(true);
+        const spySuspend = vi.spyOn(childProcess, "suspendSystem");
+
+        await normalRun();
+
+        expect(spySuspend).toHaveBeenCalledTimes(1);
+      });
+
+      test("should not suspend when AUTO_SUSPEND is false", async () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_SUSPEND", "get").mockReturnValueOnce(false);
+        const spySuspend = vi.spyOn(childProcess, "suspendSystem");
+
+        await normalRun();
+
+        expect(spySuspend).toHaveBeenCalledTimes(0);
+      });
     });
   });
 
-  describe("batch operation", () => {
-    const videoFilename1 = `${baseName}1.mp4`;
-    const videoFilename2 = `${baseName}2.mp4`;
-    const videoFilename3 = `${baseName}3.mp4`;
+  describe("in batch operation", () => {
+    function createBatchTimestamp(invalidVideoFilename?: string) {
+      interface BatchType {
+        timestampArr: string[];
+        filenames: string[];
+      }
 
-    const batchTimestamp = [
-      createTimestamp(videoFilename1, timestampPairs),
-      createTimestamp(videoFilename2, timestampPairs),
-      createTimestamp(videoFilename3, timestampPairs),
-    ].join("\n@batch@\n");
+      const batch = new Array(3).fill(null).reduce<BatchType>(
+        (acc, _, i) => {
+          let filename = `${baseName}${(i + 1).toString()}.mp4`;
+          if (invalidVideoFilename !== undefined && i + 1 === 2) {
+            filename = invalidVideoFilename;
+          }
 
-    test("should pass expected arguments", () => {
-      fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, {
-        encoding: "utf-8",
+          const timestamp = createTimestamp(filename);
+          acc.timestampArr.push(timestamp);
+          acc.filenames.push(filename);
+
+          return acc;
+        },
+        { timestampArr: [], filenames: [] },
+      );
+
+      const batchTimestamp = batch.timestampArr.join("\n");
+      return { batchTimestamp, filenames: batch.filenames };
+    }
+
+    test("should auto rename input and timestamp", async () => {
+      vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValueOnce(true);
+
+      const oldFilename = "input! video@.mp4";
+      const { batchTimestamp, filenames } = createBatchTimestamp(oldFilename);
+
+      filenames.forEach((filename) => {
+        mockVideoDuration();
+        setupInputFiles(batchTimestamp, filename);
       });
-      const expectedArgs = [
-        getArgs(videoFilename1),
-        getArgs(videoFilename2),
-        getArgs(videoFilename3),
-      ];
-      expectedArgs.forEach((arg) => {
-        fs.writeFileSync(arg.videoFilename, "random");
-      });
 
-      init(endErrorLogger);
+      await init(endErrorLogger);
 
-      expect(spyMain).toHaveBeenCalledTimes(expectedArgs.length);
-      expectedArgs.forEach((arg, index) => {
-        expect(spyMain).toHaveBeenNthCalledWith(
-          index + 1,
-          arg,
-          endErrorLogger.addError,
-        );
+      const files = fs.readdirSync(".");
+      const expectedFiles = new Array(3)
+        .fill(null)
+        .reduce<string[]>((acc, _, i) => {
+          const filename = i + 1 === 2 ? "input video.mp4" : filenames[i];
+          if (filename === undefined)
+            throw new UnexpectedError("Filename is undefined");
+
+          const basename = path.parse(filename).name;
+          const timestampCopy = basename + ".txt";
+          const output = outputFilenameFormatter(basename);
+          return [...acc, basename, filename, timestampCopy, output];
+        }, []);
+
+      expectedFiles.forEach((file) => {
+        expect(files).toContain(file);
       });
-      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
-    test("should log errors at the end", () => {
-      spyMain.mockRestore();
-      fs.writeFileSync(FILENAME_OPTIONS.TIMESTAMPS_FILENAME, batchTimestamp, {
-        encoding: "utf-8",
-      });
-      const expectedArgs = [
-        getArgs(videoFilename1),
-        getArgs(videoFilename2),
-        getArgs(videoFilename3),
-      ];
-      expectedArgs.forEach((arg, i) => {
-        mockErrorFileSizeAndDuration(
-          arg,
-          i + 1,
-          spyGetVideoDuration,
-          spyGetFileSize,
-        );
+    test("should throw error if AUTO_RENAME is false (default)", async () => {
+      const oldFilename = "input! video@.mp4";
+      const { batchTimestamp, filenames } = createBatchTimestamp(oldFilename);
+
+      filenames.forEach((filename) => {
+        setupInputFiles(batchTimestamp, filename);
       });
 
-      init(endErrorLogger);
+      await expect(init(endErrorLogger)).rejects.toThrow(
+        /(?=.*special characters)(?=.*try renaming)/is,
+      );
+    });
 
-      expect(spyError).toHaveBeenCalledTimes(2);
+    test("should log video duration error", async () => {
+      const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
+      const { batchTimestamp, filenames } = createBatchTimestamp();
+
+      filenames.forEach((filename) => {
+        setupInputFiles(batchTimestamp, filename);
+        mockGetFileSize();
+        mockVideoDuration(true);
+      });
+
+      await init(endErrorLogger);
+
+      expect(spyError).toHaveBeenCalledTimes(3);
       expect(spyError).toHaveBeenNthCalledWith(
         1,
         expect.stringMatching(/possible error/gi),
       );
-      expect(spyError).toHaveBeenNthCalledWith(
-        2,
-        expect.stringMatching(/new file size is bigger/gi),
-      );
-      expect(spySuspend).toHaveBeenCalledTimes(1);
     });
 
-    test("should throw error", () => {
-      modify20();
-      const timestampWithError = [
-        createTimestamp(videoFilename1, timestampPairs),
-        createTimestamp(videoFilename2, timestampPairs),
-        createTimestamp(videoFilename3, timestampPairs),
-      ].join("\n@batch@\n");
+    test("should log file size error", async () => {
+      const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
+      const { batchTimestamp, filenames } = createBatchTimestamp();
 
-      fs.writeFileSync(
-        FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-        timestampWithError,
-        { encoding: "utf-8" },
-      );
-
-      expect(() => {
-        init(endErrorLogger);
-      }).toThrow(/timestamp errors/i);
-      expect(spySuspend).toHaveBeenCalledTimes(0);
-    });
-
-    test("should rename multiple video input and update timestamp", () => {
-      vi.spyOn(APP_OPTIONS, "AUTO_RENAME", "get").mockReturnValue(true);
-      const input = [
-        "video1 with invalid character!",
-        "video2 with invalid character~",
-        "video3 with invalid character.",
-      ];
-      const batchTimestamp: string[] = [];
-      const expectedArgs = input.map((baseName, i) => {
-        const baseFileName = `${baseName}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        const newFile = baseName.slice(0, i === 2 ? undefined : -1);
-        const newFileName = `${newFile}.${FILENAME_OPTIONS.EXTENSION_NAME}`;
-        const timestamp = createTimestamp(baseFileName, timestampPairs);
-        batchTimestamp.push(timestamp);
-        fs.writeFileSync(baseFileName, "random");
-
-        return getArgs(newFileName);
+      filenames.forEach((filename) => {
+        setupInputFiles(batchTimestamp, filename);
+        mockGetFileSize(true);
+        mockVideoDuration();
       });
-      const batchTimestampText = batchTimestamp.join("\n@batch@\n");
-      fs.writeFileSync(
-        FILENAME_OPTIONS.TIMESTAMPS_FILENAME,
-        batchTimestampText,
-        { encoding: "utf-8" },
+
+      await init(endErrorLogger);
+
+      expect(spyError).toHaveBeenCalledTimes(3);
+      expect(spyError).toHaveBeenNthCalledWith(
+        1,
+        expect.stringMatching(/file size/gi),
       );
+    });
 
-      init(endErrorLogger);
+    describe("auto suspend function", () => {
+      async function normalBatchRun() {
+        const { batchTimestamp, filenames } = createBatchTimestamp();
 
-      const dir = fs.readdirSync(".");
-      expect(spyMain).toHaveBeenCalledTimes(input.length);
-      expectedArgs.forEach((arg, index) => {
-        expect(spyMain).toHaveBeenNthCalledWith(
-          index + 1,
-          arg,
-          endErrorLogger.addError,
-        );
-        expect(dir).toContain(arg.videoFilename);
+        filenames.forEach((filename) => {
+          setupInputFiles(batchTimestamp, filename);
+          mockGetFileSize();
+          mockVideoDuration();
+        });
+
+        await init(endErrorLogger);
+      }
+
+      test("should suspend when AUTO_SUSPEND is true", async () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_SUSPEND", "get").mockReturnValueOnce(true);
+        const spySuspend = vi.spyOn(childProcess, "suspendSystem");
+
+        await normalBatchRun();
+
+        expect(spySuspend).toHaveBeenCalledTimes(1);
+      });
+
+      test("should not suspend when AUTO_SUSPEND is false", async () => {
+        vi.spyOn(APP_OPTIONS, "AUTO_SUSPEND", "get").mockReturnValueOnce(false);
+        const spySuspend = vi.spyOn(childProcess, "suspendSystem");
+
+        await normalBatchRun();
+
+        expect(spySuspend).toHaveBeenCalledTimes(0);
       });
     });
   });

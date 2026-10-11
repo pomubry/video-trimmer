@@ -2,43 +2,24 @@ import { main } from "./main.js";
 import { readTimestamps, renameFile } from "../system/filesystem.js";
 import { suspendSystem } from "../system/childProcess.js";
 import { getMainArgs } from "../utils/timestamp.js";
-import { errorMsgFormatter } from "../utils/formatter.js";
-import { getTimestampArray } from "../utils/timestamp.js";
-import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
 import { APP_OPTIONS } from "../config.js";
+import { EndErrorLogger } from "../utils/errors/endErrorLogger.js";
 
-export function init(endErrorLogger: EndErrorLogger) {
-  const ts = readTimestamps();
+export async function init(endErrorLogger: EndErrorLogger) {
+  const readStream = readTimestamps();
+  const mainArgs = await getMainArgs(readStream);
 
-  if (ts.includes(APP_OPTIONS.BATCH_SEPARATOR)) {
-    const timestampBatch = getTimestampArray(ts, APP_OPTIONS.BATCH_SEPARATOR);
+  mainArgs.forEach((mainArg) => {
+    if (mainArg.oldFilename !== mainArg.videoFilename) {
+      renameFile(mainArg.oldFilename, mainArg.videoFilename);
+    }
+  });
 
-    const mainArgs = timestampBatch
-      .map((ts) => getTimestampArray(ts, "\n"))
-      .map((timestampArr) => {
-        const args = getMainArgs(timestampArr);
-        renameFile(timestampArr, args.videoFilename);
-        return args;
-      });
-
-    mainArgs.forEach((arg, i) => {
-      if (timestampBatch[i] === undefined)
-        throw new Error(
-          errorMsgFormatter(
-            `Index ${i.toString()} of the timestamp batch is undefined.
-                        ${timestampBatch}`, // eslint-disable-line @typescript-eslint/restrict-template-expressions
-          ),
-        );
-
-      main(arg, endErrorLogger.addError);
-    });
-  } else {
-    const timestampArr = getTimestampArray(ts, "\n");
-    const args = getMainArgs(timestampArr);
-    renameFile(timestampArr, args.videoFilename);
-    main(args, endErrorLogger.addError);
-  }
+  mainArgs.forEach((mainArg) => {
+    main(mainArg, endErrorLogger.addError);
+  });
 
   endErrorLogger.logErrors();
-  suspendSystem();
+
+  if (APP_OPTIONS.AUTO_SUSPEND) suspendSystem();
 }

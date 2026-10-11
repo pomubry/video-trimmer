@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "test": "npx tsc && vitest",
-    "build": "esbuild src/index.ts --bundle --platform=node --outfile=index.js",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=index.js",
     "prepare": "husky"
   },
   "lint-staged": {
