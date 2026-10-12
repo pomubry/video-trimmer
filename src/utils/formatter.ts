@@ -1,5 +1,4 @@
 import path from "node:path";
-import os from "node:os";
 
 import { UnexpectedError } from "./errors/unexpectedError.js";
 import { FILENAME_OPTIONS } from "../config.js";
@@ -42,7 +41,6 @@ export function createFfmpegArgs(
 ) {
   const basename = path.parse(input).name;
 
-  const hevcEncoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
   const encoder = HEVC
     ? [
         "-x265-params",
@@ -50,7 +48,7 @@ export function createFfmpegArgs(
         "-crf",
         "23",
         "-c:v",
-        hevcEncoder,
+        "hevc",
         "-tag:v",
         "hvc1",
       ]

@@ -1,4 +1,3 @@
-import os from "node:os";
 import path from "node:path";
 import { vi, describe, test, beforeEach, expect } from "vitest";
 
@@ -134,7 +133,7 @@ describe("createFFmpegScripts", () => {
         "-crf",
         "23",
         "-c:v",
-        os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc",
+        "hevc",
         "-tag:v",
         "hvc1",
         path.join(basename, `${basename}_${videoCounter(idx + 1)}.mp4`),

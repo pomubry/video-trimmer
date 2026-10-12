@@ -78,7 +78,6 @@ import path3 from "node:path";
 
 // src/utils/formatter.ts
 import path2 from "node:path";
-import os from "node:os";
 
 // src/utils/errors/unexpectedError.ts
 var UnexpectedError = class extends Error {
@@ -117,14 +116,13 @@ function videoCounter(counter) {
 }
 function createFfmpegArgs({ input, timestampPairs, videoSegments }, { FPS, HEVC }) {
   const basename = path2.parse(input).name;
-  const hevcEncoder = os.platform() === "darwin" ? "hevc_videotoolbox" : "hevc";
   const encoder = HEVC ? [
     "-x265-params",
     "log-level=error",
     "-crf",
     "23",
     "-c:v",
-    hevcEncoder,
+    "hevc",
     "-tag:v",
     "hvc1"
   ] : ["-crf", "18", "-c:v", "h264"];
