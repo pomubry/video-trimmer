@@ -1,3 +1,27 @@
+// src/config.ts
+var FFMPEG_OPTIONS = {
+  OFFSET: 0,
+  // offset in seconds.
+  FPS: 0,
+  // override in case of low fps from VFR inputs.
+  HEVC: false,
+  // encoding defaults to h264.
+  EXEC_SYNC_OPTIONS: { stdio: "inherit" }
+};
+var FILENAME_OPTIONS = {
+  EXTENSION_NAME: "mp4",
+  TIMESTAMPS_FILENAME: "timestamps.txt",
+  SEGMENT_LIST_FILENAME: "mylist.txt",
+  SUPPORTED_EXTENSIONS: ["webm", "mkv", "flv", "avi", "ts", "mov", "mp4"]
+};
+var APP_OPTIONS = {
+  IGNORE_ERRORS: true,
+  KEEP_VIDEO_SEGMENTS: true,
+  KEEP_TIMESTAMP_COPY: true,
+  AUTO_RENAME: false,
+  AUTO_SUSPEND: false
+};
+
 // src/init/main.ts
 import fs2 from "node:fs";
 import path5 from "node:path";
@@ -62,30 +86,6 @@ var UnexpectedError = class extends Error {
     super(message);
     this.name = "UnexpectedError";
   }
-};
-
-// src/config.ts
-var FFMPEG_OPTIONS = {
-  OFFSET: 0,
-  // offset in seconds.
-  FPS: 0,
-  // override in case of low fps from VFR inputs.
-  HEVC: false,
-  // encoding defaults to h264.
-  EXEC_SYNC_OPTIONS: { stdio: "inherit" }
-};
-var FILENAME_OPTIONS = {
-  EXTENSION_NAME: "mp4",
-  TIMESTAMPS_FILENAME: "timestamps.txt",
-  SEGMENT_LIST_FILENAME: "mylist.txt",
-  SUPPORTED_EXTENSIONS: ["webm", "mkv", "flv", "avi", "ts", "mov", "mp4"]
-};
-var APP_OPTIONS = {
-  IGNORE_ERRORS: true,
-  KEEP_VIDEO_SEGMENTS: true,
-  KEEP_TIMESTAMP_COPY: true,
-  AUTO_RENAME: false,
-  AUTO_SUSPEND: false
 };
 
 // src/utils/formatter.ts
