@@ -3,13 +3,13 @@ import { EndErrorLogger } from "./endErrorLogger.js";
 
 describe("endErrorLogger", () => {
   let endErrorLogger: EndErrorLogger;
-  const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
 
   beforeEach(() => {
     endErrorLogger = new EndErrorLogger();
   });
 
   test("should log errors", () => {
+    const spyError = vi.spyOn(console, "error").mockImplementation(vi.fn());
     const messages = ["error1", "error2", "error3"];
 
     messages.forEach((message) => {
