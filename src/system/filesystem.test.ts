@@ -102,7 +102,7 @@ describe("removeSegmentList", () => {
 
     removeSegmentList();
 
-    expect(fs.readdirSync(".").length).toBe(0);
+    expect(fs.readdirSync(".")).toHaveLength(0);
   });
 });
 
@@ -118,7 +118,7 @@ describe("removeOutputIfExists", () => {
     removeOutputIfExists(outputFilename);
 
     const res = fs.readdirSync(".");
-    expect(res.length).toBe(0);
+    expect(res).toHaveLength(0);
   });
 
   test("Should keep other files", () => {
@@ -129,7 +129,7 @@ describe("removeOutputIfExists", () => {
     removeOutputIfExists(outputFilename);
 
     const res = fs.readdirSync(".");
-    expect(res.length).toBe(1);
+    expect(res).toHaveLength(1);
   });
 
   test("Should not throw if output file does not exists", () => {
@@ -153,25 +153,25 @@ describe("removeVideoSegments", () => {
   test("Should remove the video segments", () => {
     vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false);
 
-    expect(fs.readdirSync(".").length).toBe(1);
-    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    expect(fs.readdirSync(".")).toHaveLength(1);
+    expect(fs.readdirSync(baseName)).toHaveLength(videoSegments.length);
 
     removeVideoSegments(baseName);
 
-    expect(fs.readdirSync(".").length).toBe(0);
+    expect(fs.readdirSync(".")).toHaveLength(0);
   });
 
   test("Should keep other files", () => {
     vi.spyOn(APP_OPTIONS, "KEEP_VIDEO_SEGMENTS", "get").mockReturnValue(false);
     fs.writeFileSync("otherFile.txt", randomText);
 
-    expect(fs.readdirSync(".").length).toBe(2);
-    expect(fs.readdirSync(baseName).length).toBe(videoSegments.length);
+    expect(fs.readdirSync(".")).toHaveLength(2);
+    expect(fs.readdirSync(baseName)).toHaveLength(videoSegments.length);
 
     removeVideoSegments(baseName);
 
     const res = fs.readdirSync(".");
-    expect(res.length).toBe(1);
+    expect(res).toHaveLength(1);
   });
 });
 

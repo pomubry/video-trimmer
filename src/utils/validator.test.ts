@@ -23,7 +23,7 @@ describe("checkVideoDurationErrors", () => {
       spy,
     );
 
-    expect(possibleErrors.length).toBe(0);
+    expect(possibleErrors).toHaveLength(0);
   });
 
   test("should return 2 errors", () => {
@@ -38,23 +38,30 @@ describe("checkVideoDurationErrors", () => {
       spy,
     );
 
-    expect(possibleErrors.length).toBe(2);
+    expect(possibleErrors).toHaveLength(2);
   });
 
   test("should log 3 okay and 2 errors", () => {
-    const videoDuration = [1, 4, 5, 6, 10];
     const spyLog = vi.spyOn(console, "log").mockImplementation(vi.fn());
-    const okayString = expect.stringMatching(/okay/i) as string;
-    const errorString = expect.stringMatching(/error/i) as string;
     vi.mocked(getVideoDuration).mockReturnValue(5);
+    const videoDuration = [1, 4, 5, 6, 10];
 
     checkVideoDurationErrors(videoSegments, videoDuration, baseName, spy);
 
-    expect(spyLog).toHaveBeenNthCalledWith(1, errorString);
-    expect(spyLog).toHaveBeenNthCalledWith(2, okayString);
-    expect(spyLog).toHaveBeenNthCalledWith(3, okayString);
-    expect(spyLog).toHaveBeenNthCalledWith(4, okayString);
-    expect(spyLog).toHaveBeenNthCalledWith(5, errorString);
+    const okayString = expect.stringMatching(/okay/i) as string;
+    const errorString = expect.stringMatching(/error/i) as string;
+    videoDuration.forEach((_, idx) => {
+      const nth = idx + 1;
+      switch (nth) {
+        case 1:
+        case 5:
+          expect(spyLog).toHaveBeenNthCalledWith(nth, errorString);
+          break;
+        default:
+          expect(spyLog).toHaveBeenNthCalledWith(nth, okayString);
+          break;
+      }
+    });
   });
 });
 
