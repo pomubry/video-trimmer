@@ -1,11 +1,11 @@
 {
   "name": "video-trimmer",
   "version": "1.0.0",
-  "description": "A script to quickly trim a video using Node.js, FFmpeg, and mpv.",
+  "description": "A simple video trimmer script for Linux and macOS that uses FFmpeg and Node.js",
   "main": "index.ts",
   "scripts": {
-    "test": "npx tsc && vitest",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=index.js --inject:src/config.ts",
+    "test": "vitest",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=bin/vtrim --banner:js=\"#!/usr/bin/env node\" --inject:src/config.ts",
     "prepare": "husky"
   },
   "lint-staged": {
