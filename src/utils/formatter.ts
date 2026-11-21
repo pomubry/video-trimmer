@@ -48,7 +48,9 @@ export function createFfmpegArgs(
         "-crf",
         "23",
         "-c:v",
-        "hevc",
+        "libx265",
+        "-pix_fmt",
+        "yuv420p10le",
         "-tag:v",
         "hvc1",
       ]
